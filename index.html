@@ -224,7 +224,7 @@
     background: #ffffff;
     color: var(--win-text);
     padding: 5px 10px;
-    border-radius: 0 12px 0 8px;
+    border-radius: 0 9px 0 9px;
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
@@ -444,7 +444,7 @@
 <script>
   const currentPlan = {
     key: 'current',
-    name: 'Your Current Plan',
+    name: 'Custom Plan',
     color: 'gray',
     editable: true,
     monthly: 300,
@@ -521,11 +521,11 @@
       const isWinner = !r.plan.editable && r.net === winnerNet;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
       const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
-      const capAfter = `<span class="spec-after">then ${postCapDisplay}</span>`;
+      const capAfter = r.plan.cap > 0 ? `<span class="spec-after">then ${postCapDisplay}</span>` : '';
       const specs = r.plan.editable ? `
               <div><span class="spec-label">Split</span><span class="spec-value"><input class="spec-edit spec-edit-split" data-field="agentShare" value="${Math.round((1 - r.plan.splitRate) * 100)}" />/${Math.round(r.plan.splitRate * 100)}</span></div>
               <div><span class="spec-label">Plan Fee</span><span class="spec-value">$<input class="spec-edit" data-field="monthly" value="${r.plan.monthly}" />/mo</span></div>
-              <div><span class="spec-label">Cap</span><span class="spec-value">$<input class="spec-edit" data-field="cap" value="${r.plan.cap.toLocaleString('en-US')}" /> <span class="spec-after">then <input class="spec-edit spec-edit-split" data-field="postCapAgentShare" value="${Math.round((1 - r.plan.postCapRate) * 100)}" />/${Math.round(r.plan.postCapRate * 100)}</span></span></div>
+              <div><span class="spec-label">Cap</span><span class="spec-value">$<input class="spec-edit" data-field="cap" value="${r.plan.cap.toLocaleString('en-US')}" />${r.plan.cap > 0 ? ` <span class="spec-after">then <input class="spec-edit spec-edit-split" data-field="postCapAgentShare" value="${Math.round((1 - r.plan.postCapRate) * 100)}" />/${Math.round(r.plan.postCapRate * 100)}</span>` : ''}</span></div>
               <div><span class="spec-label">Per Transaction</span><span class="spec-value">$<input class="spec-edit" data-field="perTransaction" value="${r.plan.perTransaction}" /></span></div>
       ` : `
               <div><span class="spec-label">Split</span><span class="spec-value">${splitDisplay}</span></div>
