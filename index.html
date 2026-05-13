@@ -219,16 +219,18 @@
   }
   .winner-badge {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 0;
+    right: 0;
     background: #ffffff;
     color: var(--win-text);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 0 12px 0 8px;
+    font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    box-shadow: -1px 1px 4px rgba(0,0,0,0.08);
+    z-index: 1;
   }
   .plan.winner .plan-header { background: var(--win); }
   .plan-header {
@@ -237,6 +239,50 @@
   }
   .plan-header.red { background: var(--plan-red-bg); }
   .plan-header.blue { background: var(--plan-blue-bg); }
+  .plan-header.gray { background: #6b7280; }
+  .plan-header .spec-edit {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 0;
+    field-sizing: content;
+    width: auto;
+    min-width: 1ch;
+    border-bottom: 1px dashed rgba(255,255,255,0.4);
+    border-radius: 0;
+    height: auto;
+    text-align: left;
+  }
+  .plan-header .spec-edit:focus {
+    outline: none;
+    background: transparent;
+    border-bottom-color: rgba(255,255,255,0.9);
+  }
+  .plan-header .spec-edit:hover {
+    border-bottom-color: rgba(255,255,255,0.7);
+  }
+  .plan-header .spec-edit-split { padding: 0; }
+  .plan-header h3 .name-edit {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    font-family: inherit;
+    padding: 0;
+    field-sizing: content;
+    width: auto;
+    min-width: 4ch;
+    border-bottom: 1px dashed rgba(255,255,255,0.4);
+    border-radius: 0;
+    height: auto;
+  }
+  .plan-header h3 .name-edit:focus {
+    outline: none;
+    border-bottom-color: rgba(255,255,255,0.9);
+  }
   .plan-header h3 { margin: 0 0 10px; font-size: 22px; }
   .plan-header .specs {
     display: grid;
@@ -254,6 +300,16 @@
   }
   .plan-header .spec-value {
     font-weight: 600;
+  }
+  .plan-header .spec-after {
+    font-weight: 400;
+    font-size: 11px;
+    opacity: 0.75;
+    margin-left: 2px;
+  }
+  .plan-header .spec-after .spec-edit {
+    font-size: 11px;
+    font-weight: 400;
   }
   .plan-body { padding: 20px; }
   .net {
@@ -288,6 +344,26 @@
     color: var(--text);
   }
   .breakdown .row .val { color: var(--text); font-variant-numeric: tabular-nums; }
+  .breakdown-edit {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    border-radius: 0;
+    color: inherit;
+    font-size: 13px;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    padding: 0;
+    height: auto;
+    field-sizing: content;
+    width: auto;
+    min-width: 1ch;
+    text-align: right;
+  }
+  .breakdown-edit:focus {
+    outline: none;
+    border-bottom-color: var(--text);
+  }
   .cap-note {
     margin-top: 12px;
     font-size: 12px;
@@ -366,6 +442,19 @@
 
 <script src="agents-embed.js"></script>
 <script>
+  const currentPlan = {
+    key: 'current',
+    name: 'Your Current Plan',
+    color: 'gray',
+    editable: true,
+    monthly: 300,
+    annualDues: 0,
+    perTransaction: 100,
+    splitRate: 0.30,
+    cap: 0,
+    postCapRate: 0.30,
+  };
+
   const plans = [
     {
       key: 'no-stress',
@@ -422,24 +511,34 @@
     const transactions = parseNum('transactions');
     const mls = parseNum('mls');
 
-    const results = plans.map(p => ({ plan: p, ...compute(p, gci, transactions, mls) }));
-    const winnerNet = Math.max(...results.map(r => r.net));
+    const allPlans = [...plans, currentPlan];
+    const results = allPlans.map(p => ({ plan: p, ...compute(p, gci, transactions, mls) }));
+    const remaxResults = results.filter(r => !r.plan.editable);
+    const winnerNet = Math.max(...remaxResults.map(r => r.net));
 
     const container = document.getElementById('plans');
     container.innerHTML = results.map(r => {
-      const isWinner = r.net === winnerNet;
+      const isWinner = !r.plan.editable && r.net === winnerNet;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
-      return `
-        <div class="plan ${isWinner ? 'winner' : ''}">
-          ${isWinner ? '<div class="winner-badge">Best Option</div>' : ''}
-          <div class="plan-header ${r.plan.color}">
-            <h3>${r.plan.name}</h3>
-            <div class="specs">
+      const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
+      const capAfter = `<span class="spec-after">then ${postCapDisplay}</span>`;
+      const specs = r.plan.editable ? `
+              <div><span class="spec-label">Split</span><span class="spec-value"><input class="spec-edit spec-edit-split" data-field="agentShare" value="${Math.round((1 - r.plan.splitRate) * 100)}" />/${Math.round(r.plan.splitRate * 100)}</span></div>
+              <div><span class="spec-label">Plan Fee</span><span class="spec-value">$<input class="spec-edit" data-field="monthly" value="${r.plan.monthly}" />/mo</span></div>
+              <div><span class="spec-label">Cap</span><span class="spec-value">$<input class="spec-edit" data-field="cap" value="${r.plan.cap.toLocaleString('en-US')}" /> <span class="spec-after">then <input class="spec-edit spec-edit-split" data-field="postCapAgentShare" value="${Math.round((1 - r.plan.postCapRate) * 100)}" />/${Math.round(r.plan.postCapRate * 100)}</span></span></div>
+              <div><span class="spec-label">Per Transaction</span><span class="spec-value">$<input class="spec-edit" data-field="perTransaction" value="${r.plan.perTransaction}" /></span></div>
+      ` : `
               <div><span class="spec-label">Split</span><span class="spec-value">${splitDisplay}</span></div>
               <div><span class="spec-label">Plan Fee</span><span class="spec-value">${fmt(r.plan.monthly)}/mo</span></div>
-              <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(r.plan.cap)}</span></div>
+              <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(r.plan.cap)} ${capAfter}</span></div>
               <div><span class="spec-label">Per Transaction</span><span class="spec-value">${fmt(r.plan.perTransaction)}</span></div>
-            </div>
+      `;
+      return `
+        <div class="plan ${isWinner ? 'winner' : ''}">
+          ${isWinner ? '<div class="winner-badge">Best RE/MAX Option</div>' : ''}
+          <div class="plan-header ${r.plan.color}">
+            <h3>${r.plan.editable ? `<input class="name-edit" data-field="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />` : r.plan.name}</h3>
+            <div class="specs">${specs}</div>
           </div>
           <div class="plan-body">
             <p class="net">${fmt(r.net)}</p>
@@ -450,7 +549,9 @@
               <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="row"><span>MLS Fees (×12)</span><span class="val">−${fmt(r.mlsTotal)}</span></div>
               <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
-              <div class="row"><span>Annual RE/MAX Dues</span><span class="val">−${fmt(r.dues)}</span></div>
+              <div class="row"><span>${r.plan.editable ? 'Annual Dues' : 'Annual RE/MAX Dues'}</span><span class="val">${r.plan.editable
+                ? `−$<input class="breakdown-edit" data-field="annualDues" value="${r.plan.annualDues.toLocaleString('en-US')}" />`
+                : `−${fmt(r.dues)}`}</span></div>
               <div class="row total"><span>Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
             </div>
             <div class="cap-note">
@@ -501,6 +602,28 @@
     });
   });
   document.getElementById('commissionRate').addEventListener('input', render);
+
+  document.getElementById('plans').addEventListener('input', (e) => {
+    const el = e.target;
+    const field = el.dataset.field;
+    if (el.classList.contains('name-edit')) {
+      currentPlan.name = el.value;
+      return;
+    }
+    if (!el.classList.contains('spec-edit') && !el.classList.contains('breakdown-edit')) return;
+    const raw = Number(el.value.replace(/,/g, '')) || 0;
+    if (field === 'agentShare') {
+      currentPlan.splitRate = Math.max(0, Math.min(100, 100 - raw)) / 100;
+    } else if (field === 'postCapAgentShare') {
+      currentPlan.postCapRate = Math.max(0, Math.min(100, 100 - raw)) / 100;
+    } else {
+      currentPlan[field] = raw;
+    }
+    const caret = el.selectionStart;
+    render();
+    const fresh = document.querySelector(`[data-field="${field}"]`);
+    if (fresh) { fresh.focus(); fresh.setSelectionRange(caret, caret); }
+  });
   updateAvgPrice();
   render();
 
