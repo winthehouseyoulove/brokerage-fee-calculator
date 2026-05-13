@@ -513,16 +513,15 @@
 
   function filterAgents(q) {
     q = q.trim().toLowerCase();
-    if (!q) return [];
-    return agents.filter(a => a.name.toLowerCase().includes(q)).slice(0, 20);
+    const sorted = [...agents].sort((a, b) => a.name.localeCompare(b.name));
+    if (!q) return sorted;
+    return sorted.filter(a => a.name.toLowerCase().includes(q));
   }
 
   function renderResults(matches) {
     if (!matches.length) {
-      resultsEl.innerHTML = searchEl.value.trim()
-        ? '<div class="agent-result"><span class="ar-empty">No matches</span></div>'
-        : '';
-      resultsEl.classList.toggle('open', !!searchEl.value.trim());
+      resultsEl.innerHTML = '<div class="agent-result"><span class="ar-empty">No matches</span></div>';
+      resultsEl.classList.add('open');
       return;
     }
     resultsEl.innerHTML = matches.map((a, i) => `
@@ -548,6 +547,11 @@
   searchEl.addEventListener('input', () => {
     activeIndex = -1;
     loadedEl.style.display = 'none';
+    renderResults(filterAgents(searchEl.value));
+  });
+
+  searchEl.addEventListener('focus', () => {
+    activeIndex = -1;
     renderResults(filterAgents(searchEl.value));
   });
 
