@@ -51,6 +51,61 @@
     margin-bottom: 24px;
   }
   .inputs h2 { margin: 0 0 16px; font-size: 18px; color: var(--net-color); }
+  .agent-search {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .agent-search input {
+    width: 100%;
+    height: 52px;
+    padding: 10px 14px;
+    font-size: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--field-bg);
+  }
+  .agent-search input:focus {
+    outline: none;
+    border-color: var(--remax-blue);
+    background: var(--field-bg-focus);
+  }
+  .agent-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(12,39,73,0.12);
+    z-index: 10;
+    display: none;
+  }
+  .agent-results.open { display: block; }
+  .agent-result {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .agent-result:last-child { border-bottom: none; }
+  .agent-result:hover, .agent-result.active {
+    background: var(--field-bg);
+  }
+  .agent-result .ar-name { font-weight: 600; color: var(--text); }
+  .agent-result .ar-stats { font-size: 12px; color: var(--muted); }
+  .agent-result .ar-empty { color: var(--muted); font-style: italic; }
+  .agent-loaded {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #0043ff;
+    font-weight: 600;
+  }
   .input-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -246,6 +301,11 @@
 <div class="container">
   <div class="inputs">
     <h2>Your Production</h2>
+    <div class="agent-search">
+      <input type="text" id="agentSearch" placeholder="Search for an agent to auto-fill (e.g. Adam Marit)" autocomplete="off" />
+      <div class="agent-results" id="agentResults"></div>
+      <div class="agent-loaded" id="agentLoaded" style="display:none;"></div>
+    </div>
     <div class="input-grid">
       <div class="field">
         <label for="volume">Annual Volume</label>
@@ -281,6 +341,7 @@
   </footer>
 </div>
 
+<script src="agents-embed.js"></script>
 <script>
   const plans = [
     {
@@ -428,6 +489,84 @@
   });
   updateAvgPrice();
   render();
+
+  // --- Agent search ---
+  const agents = window.__AGENTS__ || [];
+  let activeIndex = -1;
+  const searchEl = document.getElementById('agentSearch');
+  const resultsEl = document.getElementById('agentResults');
+  const loadedEl = document.getElementById('agentLoaded');
+
+  function filterAgents(q) {
+    q = q.trim().toLowerCase();
+    if (!q) return [];
+    return agents.filter(a => a.name.toLowerCase().includes(q)).slice(0, 20);
+  }
+
+  function renderResults(matches) {
+    if (!matches.length) {
+      resultsEl.innerHTML = searchEl.value.trim()
+        ? '<div class="agent-result"><span class="ar-empty">No matches</span></div>'
+        : '';
+      resultsEl.classList.toggle('open', !!searchEl.value.trim());
+      return;
+    }
+    resultsEl.innerHTML = matches.map((a, i) => `
+      <div class="agent-result${i === activeIndex ? ' active' : ''}" data-index="${i}">
+        <span class="ar-name">${a.name}</span>
+        <span class="ar-stats">${a.units} units · $${a.volume.toLocaleString('en-US')}</span>
+      </div>
+    `).join('');
+    resultsEl.classList.add('open');
+  }
+
+  function selectAgent(agent) {
+    document.getElementById('volume').value = agent.volume.toLocaleString('en-US');
+    document.getElementById('transactions').value = String(Math.round(agent.units));
+    updateAvgPrice();
+    render();
+    searchEl.value = agent.name;
+    resultsEl.classList.remove('open');
+    loadedEl.textContent = `Loaded ${agent.name} ($${agent.volume.toLocaleString('en-US')} · ${agent.units} units)`;
+    loadedEl.style.display = 'block';
+  }
+
+  searchEl.addEventListener('input', () => {
+    activeIndex = -1;
+    loadedEl.style.display = 'none';
+    renderResults(filterAgents(searchEl.value));
+  });
+
+  searchEl.addEventListener('keydown', (e) => {
+    const matches = filterAgents(searchEl.value);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, matches.length - 1);
+      renderResults(matches);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      renderResults(matches);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const pick = matches[activeIndex >= 0 ? activeIndex : 0];
+      if (pick) selectAgent(pick);
+    } else if (e.key === 'Escape') {
+      resultsEl.classList.remove('open');
+    }
+  });
+
+  resultsEl.addEventListener('click', (e) => {
+    const item = e.target.closest('.agent-result');
+    if (!item || !item.dataset.index) return;
+    const matches = filterAgents(searchEl.value);
+    const pick = matches[Number(item.dataset.index)];
+    if (pick) selectAgent(pick);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.agent-search')) resultsEl.classList.remove('open');
+  });
 </script>
 </body>
 </html>
