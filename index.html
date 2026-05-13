@@ -178,6 +178,20 @@
     letter-spacing: 0.5px;
     margin-top: 2px;
   }
+  .input-with-suffix {
+    display: flex;
+    align-items: baseline;
+  }
+  .input-with-suffix input {
+    flex: 0 0 auto;
+    width: 3.5ch;
+    padding-right: 0;
+  }
+  .input-with-suffix .suffix {
+    font-size: 16px;
+    color: var(--text);
+    margin-left: 1px;
+  }
   .help {
     font-size: 12px;
     color: var(--muted);
@@ -310,7 +324,6 @@
       <div class="field">
         <label for="volume">Annual Volume</label>
         <input type="text" inputmode="numeric" id="volume" value="5,000,000" />
-        <div class="help">Total sales volume closed in the year (3% commission assumed)</div>
       </div>
       <div class="field">
         <label>Transactions & Avg Sale Price</label>
@@ -324,12 +337,22 @@
             <span class="sub">Avg sale price</span>
           </div>
         </div>
-        <div class="help">Avg sale price is auto-calculated</div>
       </div>
       <div class="field">
-        <label for="mls">MLS Fees / Month</label>
-        <input type="text" inputmode="numeric" id="mls" value="0" />
-        <div class="help">Optional — applies to all plans equally</div>
+        <label>Commission & MLS Fees</label>
+        <div class="split-input">
+          <div class="half">
+            <div class="input-with-suffix">
+              <input type="text" inputmode="decimal" id="commissionRate" value="3" />
+              <span class="suffix">%</span>
+            </div>
+            <span class="sub">Avg commission</span>
+          </div>
+          <div class="half">
+            <input type="text" inputmode="numeric" id="mls" value="0" />
+            <span class="sub">MLS fees / mo</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -405,7 +428,8 @@
   function render() {
     const parseNum = (id) => Number(document.getElementById(id).value.replace(/,/g, '')) || 0;
     const volume = parseNum('volume');
-    const gci = volume * 0.03;
+    const commissionPct = parseNum('commissionRate');
+    const gci = volume * (commissionPct / 100);
     const transactions = parseNum('transactions');
     const mls = parseNum('mls');
 
@@ -487,6 +511,7 @@
       render();
     });
   });
+  document.getElementById('commissionRate').addEventListener('input', render);
   updateAvgPrice();
   render();
 
