@@ -21,8 +21,8 @@
     --plan-red-bg: #0C2749;
     --plan-blue-bg: #0C2749;
     --net-color: #0C2749;
-    --win: #A3D4F2;
-    --win-text: #0C2749;
+    --win: #AA1120;
+    --win-text: #AA1120;
     --cap-note-bg: #f7f5ee;
   }
   * { box-sizing: border-box; }
@@ -146,14 +146,13 @@
   }
   .plan.winner {
     border-color: var(--win);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(163,212,242,0.5);
+    box-shadow: 0 8px 24px rgba(170,17,32,0.25);
   }
   .winner-badge {
     position: absolute;
     top: 12px;
     right: 12px;
-    background: var(--win);
+    background: #ffffff;
     color: var(--win-text);
     padding: 4px 10px;
     border-radius: 20px;
@@ -162,6 +161,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
+  .plan.winner .plan-header { background: var(--win); }
   .plan-header {
     padding: 20px;
     color: white;
@@ -317,11 +317,12 @@
       splitCost = plan.cap + remainingGci * plan.postCapRate;
       capMet = true;
     }
-    const monthlyTotal = (plan.monthly + mls) * 12;
+    const monthlyTotal = plan.monthly * 12;
+    const mlsTotal = mls * 12;
     const transactionTotal = plan.perTransaction * transactions;
-    const totalCost = splitCost + monthlyTotal + transactionTotal + plan.annualDues;
+    const totalCost = splitCost + monthlyTotal + mlsTotal + transactionTotal + plan.annualDues;
     const net = gci - totalCost;
-    return { splitCost, monthlyTotal, transactionTotal, dues: plan.annualDues, totalCost, net, capMet, gciToCap };
+    return { splitCost, monthlyTotal, mlsTotal, transactionTotal, dues: plan.annualDues, totalCost, net, capMet, gciToCap };
   }
 
   function render() {
@@ -352,6 +353,7 @@
               <div class="row"><span>Gross Commission</span><span class="val">${fmt(gci)}</span></div>
               <div class="row"><span>Brokerage Split</span><span class="val">−${fmt(r.splitCost)}</span></div>
               <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
+              <div class="row"><span>MLS Fees (×12)</span><span class="val">−${fmt(r.mlsTotal)}</span></div>
               <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
               <div class="row"><span>Annual RE/MAX Dues</span><span class="val">−${fmt(r.dues)}</span></div>
               <div class="row total"><span>Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
