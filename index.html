@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RE/MAX Alliance — Brokerage Fee Calculator</title>
+<style>
+  :root {
+    --remax-red: #AA1120;
+    --remax-blue: #0C2749;
+    --remax-blue-dark: #000e35;
+    --bg: #f7f5ee;
+    --card: #ffffff;
+    --text: #0C2749;
+    --muted: #6b7280;
+    --border: #e7e3d5;
+    --field-bg: #f7f5ee;
+    --field-bg-focus: #ffffff;
+    --header-bg: #0C2749;
+    --header-text: #f7f5ee;
+    --plan-red-bg: #0C2749;
+    --plan-blue-bg: #0C2749;
+    --net-color: #0C2749;
+    --win: #A3D4F2;
+    --win-text: #0C2749;
+    --cap-note-bg: #f7f5ee;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 32px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 6px; font-size: 28px; font-weight: 700; }
+  header p { margin: 0; opacity: 0.9; font-size: 15px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+
+  .inputs {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+  }
+  .inputs h2 { margin: 0 0 16px; font-size: 18px; color: var(--net-color); }
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .field input {
+    width: 100%;
+    height: 52px;
+    padding: 10px 12px;
+    font-size: 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--field-bg);
+    transition: border-color 0.15s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--remax-blue);
+    background: var(--field-bg-focus);
+  }
+  .split-input {
+    display: flex;
+    height: 52px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--field-bg);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .split-input:focus-within {
+    border-color: var(--remax-blue);
+    background: var(--field-bg-focus);
+  }
+  .split-input .half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    padding: 4px 10px;
+  }
+  .split-input .half + .half { border-left: 1px solid var(--border); }
+  .split-input input {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    height: auto;
+    font-size: 16px;
+    width: 100%;
+  }
+  .split-input input:focus { outline: none; }
+  .split-input input[readonly] {
+    color: #9ca3af;
+    cursor: default;
+  }
+  .split-input .sub {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+  .help {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .plan {
+    background: var(--card);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 3px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .plan.winner {
+    border-color: var(--win);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(163,212,242,0.5);
+  }
+  .winner-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--win);
+    color: var(--win-text);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .plan-header {
+    padding: 20px;
+    color: white;
+  }
+  .plan-header.red { background: var(--plan-red-bg); }
+  .plan-header.blue { background: var(--plan-blue-bg); }
+  .plan-header h3 { margin: 0 0 4px; font-size: 22px; }
+  .plan-header .subtitle { font-size: 13px; opacity: 0.9; }
+  .plan-body { padding: 20px; }
+  .net {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--net-color);
+    margin: 0 0 4px;
+  }
+  .net-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .breakdown {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    font-size: 13px;
+  }
+  .breakdown .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    color: var(--muted);
+  }
+  .breakdown .row.total {
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+    padding-top: 8px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .breakdown .row .val { color: var(--text); font-variant-numeric: tabular-nums; }
+  .cap-note {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--cap-note-bg);
+    padding: 8px 10px;
+    border-radius: 6px;
+  }
+  .cap-met { color: var(--win); font-weight: 600; }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Brokerage Fee Calculator</h1>
+  <p>RE/MAX Alliance — Compare your net income across plans</p>
+</header>
+
+<div class="container">
+  <div class="inputs">
+    <h2>Your Production</h2>
+    <div class="input-grid">
+      <div class="field">
+        <label for="volume">Annual Volume</label>
+        <input type="text" inputmode="numeric" id="volume" value="5,000,000" />
+        <div class="help">Total sales volume closed in the year (3% commission assumed)</div>
+      </div>
+      <div class="field">
+        <label>Transactions & Avg Sale Price</label>
+        <div class="split-input">
+          <div class="half">
+            <input type="text" inputmode="numeric" id="transactions" value="20" />
+            <span class="sub">Transactions / yr</span>
+          </div>
+          <div class="half">
+            <input type="text" id="avgPrice" value="250,000" readonly tabindex="-1" />
+            <span class="sub">Avg sale price</span>
+          </div>
+        </div>
+        <div class="help">Avg sale price is auto-calculated</div>
+      </div>
+      <div class="field">
+        <label for="mls">MLS Fees / Month</label>
+        <input type="text" inputmode="numeric" id="mls" value="0" />
+        <div class="help">Optional — applies to all plans equally</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="plans" id="plans"></div>
+
+  <footer>
+    Calculations are estimates based on plan terms. Confirm details with RE/MAX Alliance.
+  </footer>
+</div>
+
+<script>
+  const plans = [
+    {
+      key: 'no-stress',
+      name: 'No Stress Plan',
+      color: 'red',
+      monthly: 100,
+      annualDues: 410,
+      perTransaction: 295,
+      splitRate: 0.15,
+      cap: 19000,
+      postCapRate: 0.05,
+    },
+    {
+      key: 'director',
+      name: 'Director Plan',
+      color: 'blue',
+      monthly: 275,
+      annualDues: 410,
+      perTransaction: 199,
+      splitRate: 0.20,
+      cap: 12000,
+      postCapRate: 0.05,
+    },
+    {
+      key: 'executive',
+      name: 'Executive Plan',
+      color: 'blue',
+      monthly: 475,
+      annualDues: 410,
+      perTransaction: 199,
+      splitRate: 0.10,
+      cap: 7000,
+      postCapRate: 0.05,
+    },
+  ];
+
+  const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
+
+  function compute(plan, gci, transactions, mls) {
+    // Pre-cap split: GCI portion that fills the cap.
+    // brokerage take during pre-cap = gci_pre * splitRate, until it reaches cap.
+    const gciToCap = plan.cap / plan.splitRate; // GCI needed to hit cap
+    let splitCost, capMet;
+    if (gci <= gciToCap) {
+      splitCost = gci * plan.splitRate;
+      capMet = false;
+    } else {
+      const remainingGci = gci - gciToCap;
+      splitCost = plan.cap + remainingGci * plan.postCapRate;
+      capMet = true;
+    }
+    const monthlyTotal = (plan.monthly + mls) * 12;
+    const transactionTotal = plan.perTransaction * transactions;
+    const totalCost = splitCost + monthlyTotal + transactionTotal + plan.annualDues;
+    const net = gci - totalCost;
+    return { splitCost, monthlyTotal, transactionTotal, dues: plan.annualDues, totalCost, net, capMet, gciToCap };
+  }
+
+  function render() {
+    const parseNum = (id) => Number(document.getElementById(id).value.replace(/,/g, '')) || 0;
+    const volume = parseNum('volume');
+    const gci = volume * 0.03;
+    const transactions = parseNum('transactions');
+    const mls = parseNum('mls');
+
+    const results = plans.map(p => ({ plan: p, ...compute(p, gci, transactions, mls) }));
+    const winnerNet = Math.max(...results.map(r => r.net));
+
+    const container = document.getElementById('plans');
+    container.innerHTML = results.map(r => {
+      const isWinner = r.net === winnerNet;
+      const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
+      return `
+        <div class="plan ${isWinner ? 'winner' : ''}">
+          ${isWinner ? '<div class="winner-badge">Best Option</div>' : ''}
+          <div class="plan-header ${r.plan.color}">
+            <h3>${r.plan.name}</h3>
+            <div class="subtitle">${splitDisplay} split · ${fmt(r.plan.cap)} cap · ${fmt(r.plan.monthly)}/mo</div>
+          </div>
+          <div class="plan-body">
+            <p class="net">${fmt(r.net)}</p>
+            <div class="net-label">Estimated Net to Agent</div>
+            <div class="breakdown">
+              <div class="row"><span>Gross Commission</span><span class="val">${fmt(gci)}</span></div>
+              <div class="row"><span>Brokerage Split</span><span class="val">−${fmt(r.splitCost)}</span></div>
+              <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
+              <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
+              <div class="row"><span>Annual RE/MAX Dues</span><span class="val">−${fmt(r.dues)}</span></div>
+              <div class="row total"><span>Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
+            </div>
+            <div class="cap-note">
+              ${r.capMet
+                ? `<span class="cap-met">✓ Cap met</span> — GCI needed to cap: ${fmt(r.gciToCap)}`
+                : `GCI to reach cap: ${fmt(r.gciToCap)} (${Math.round(gci / r.gciToCap * 100)}% there)`}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function formatWithCommas(el) {
+    const raw = el.value.replace(/,/g, '');
+    if (raw === '' || isNaN(Number(raw))) return;
+    const caret = el.selectionStart;
+    const beforeCaret = el.value.slice(0, caret).replace(/,/g, '').length;
+    const formatted = Number(raw).toLocaleString('en-US');
+    el.value = formatted;
+    let newCaret = 0, count = 0;
+    for (let i = 0; i < formatted.length && count < beforeCaret; i++) {
+      if (formatted[i] !== ',') count++;
+      newCaret = i + 1;
+    }
+    el.setSelectionRange(newCaret, newCaret);
+  }
+
+  const readNum = (id) => Number(document.getElementById(id).value.replace(/,/g, '')) || 0;
+  const setVal = (id, n) => {
+    document.getElementById(id).value = Math.round(n).toLocaleString('en-US');
+  };
+
+  function updateAvgPrice() {
+    const volume = readNum('volume');
+    const transactions = readNum('transactions');
+    const avgEl = document.getElementById('avgPrice');
+    avgEl.value = transactions > 0
+      ? Math.round(volume / transactions).toLocaleString('en-US')
+      : '—';
+  }
+
+  ['volume', 'transactions', 'mls'].forEach(id => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      formatWithCommas(e.target);
+      updateAvgPrice();
+      render();
+    });
+  });
+  updateAvgPrice();
+  render();
+</script>
+</body>
+</html>
