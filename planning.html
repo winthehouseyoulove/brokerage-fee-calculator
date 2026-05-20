@@ -582,6 +582,29 @@
   }
   .cap-met { color: var(--win); font-weight: 600; }
 
+  .target-indicator {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .target-indicator.met {
+    background: #ecfdf3;
+    color: #07734c;
+  }
+  .target-indicator.short {
+    background: #fef3f2;
+    color: #b42318;
+  }
+  .target-indicator .ti-icon {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
   .payoff-banner {
     background: linear-gradient(135deg, var(--remax-red), #c41a2a);
     color: white;
@@ -675,7 +698,7 @@
     <div class="step">
       <div class="step-num">4</div>
       <h2>Convert to Sales Volume</h2>
-      <p class="step-sub">At your commission rate, what's the baseline sales volume? Each plan in Step 7 will show what you actually need after brokerage costs.</p>
+      <p class="step-sub">The volume needed to net your goal — solved against the best RE/MAX plan, so brokerage costs are already accounted for.</p>
       <div class="control-row">
         <div class="number-field">
           <label>Average Commission Rate</label>
@@ -686,7 +709,7 @@
         </div>
         <div class="big-number" style="text-align: left; padding: 0;">
           <div class="bn-val" id="requiredVolume">$0</div>
-          <div class="bn-label">Baseline Volume <span style="text-transform: none; opacity: 0.7;">(before brokerage costs)</span></div>
+          <div class="bn-label">Required Annual Sales Volume</div>
         </div>
       </div>
     </div>
@@ -748,9 +771,9 @@
     <div class="step">
       <div class="step-num">7</div>
       <h2>Which Plan Gets You There?</h2>
-      <p class="step-sub">Each plan shows the actual volume you'd need to net your mantra target, after brokerage costs are paid.</p>
+      <p class="step-sub">At the required volume from Step 4, here's how each plan compares against your goal.</p>
       <div class="payoff-banner" id="payoffBanner">
-        To net <strong id="payoffTarget">$0</strong>/yr (your pre-tax target), here's the volume each plan requires. The plan that gets you there with the <strong>least volume</strong> wins.
+        Goal: net <strong id="payoffTarget">$0</strong>/yr pre-tax to fund your life and business. The plan that gets you there is your <strong>Best RE/MAX Option</strong> below.
       </div>
       <div class="plans" id="plans"></div>
     </div>
@@ -769,19 +792,16 @@
     </div>
     <div class="sr-divider"></div>
     <div class="sr-row">
-      <div class="sr-label">Baseline Volume</div>
+      <div class="sr-label">Required Volume</div>
       <div class="sr-val accent" id="srVolume">$0</div>
     </div>
     <div class="sr-row">
-      <div class="sr-label">Baseline Transactions</div>
+      <div class="sr-label">Transactions / Yr</div>
       <div class="sr-val accent" id="srTransactions">0</div>
     </div>
     <div class="sr-row">
       <div class="sr-label">Listings · Buyers</div>
       <div class="sr-val" id="srMix">0 · 0</div>
-    </div>
-    <div class="sr-row" style="font-size: 11px; opacity: 0.7; margin-top: 4px;">
-      Step 7 shows per-plan volume after brokerage.
     </div>
   </aside>
 </div>
@@ -905,73 +925,62 @@
   }
 
   // ---------- Render plan cards (Step 7) ----------
-  function renderPlans(targetNet, commissionPct, avgPrice, listingPct) {
+  function renderPlans(gci, transactions, targetNet) {
     const allPlans = [...plans, currentPlan];
-    const solved = allPlans.map(p => ({ plan: p, ...solveRequiredGCI(p, targetNet, commissionPct, avgPrice) }));
-
-    const remaxSolved = solved.filter(s => !s.plan.editable && s.feasible);
-    const winnerVolume = remaxSolved.length ? Math.min(...remaxSolved.map(s => s.volume)) : Infinity;
+    const results = allPlans.map(p => ({ plan: p, ...compute(p, gci, transactions, 0) }));
+    const remaxResults = results.filter(r => !r.plan.editable);
+    const winnerNet = Math.max(...remaxResults.map(r => r.net));
 
     const container = document.getElementById('plans');
-    container.innerHTML = solved.map(s => {
-      const isWinner = !s.plan.editable && s.feasible && s.volume === winnerVolume;
-      const r = s.result || compute(s.plan, 0, 0, 0);
-      const gci = s.gci;
-      const transactions = s.transactions;
-      const volume = s.volume;
-      const listings = Math.round(transactions * (listingPct / 100));
-      const buyers = transactions - listings;
-
-      const splitDisplay = `${Math.round((1 - s.plan.splitRate) * 100)}/${Math.round(s.plan.splitRate * 100)}`;
-      const postCapDisplay = `${Math.round((1 - s.plan.postCapRate) * 100)}/${Math.round(s.plan.postCapRate * 100)}`;
-      const capAfter = s.plan.cap > 0 ? `<span class="spec-after">then ${postCapDisplay}</span>` : '';
-      const specs = s.plan.editable ? `
-              <div><span class="spec-label">Split</span><span class="spec-value"><input class="spec-edit spec-edit-split" data-field="agentShare" value="${Math.round((1 - s.plan.splitRate) * 100)}" />/${Math.round(s.plan.splitRate * 100)}</span></div>
-              <div><span class="spec-label">Plan Fee</span><span class="spec-value">$<input class="spec-edit" data-field="monthly" value="${s.plan.monthly}" />/mo</span></div>
-              <div><span class="spec-label">Cap</span><span class="spec-value">$<input class="spec-edit" data-field="cap" value="${s.plan.cap.toLocaleString('en-US')}" />${s.plan.cap > 0 ? ` <span class="spec-after">then <input class="spec-edit spec-edit-split" data-field="postCapAgentShare" value="${Math.round((1 - s.plan.postCapRate) * 100)}" />/${Math.round(s.plan.postCapRate * 100)}</span>` : ''}</span></div>
-              <div><span class="spec-label">Per Transaction</span><span class="spec-value">$<input class="spec-edit" data-field="perTransaction" value="${s.plan.perTransaction}" /></span></div>
+    container.innerHTML = results.map(r => {
+      const isWinner = !r.plan.editable && r.net === winnerNet;
+      const meetsTarget = r.net >= targetNet - 1;
+      const gap = r.net - targetNet;
+      const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
+      const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
+      const capAfter = r.plan.cap > 0 ? `<span class="spec-after">then ${postCapDisplay}</span>` : '';
+      const specs = r.plan.editable ? `
+              <div><span class="spec-label">Split</span><span class="spec-value"><input class="spec-edit spec-edit-split" data-field="agentShare" value="${Math.round((1 - r.plan.splitRate) * 100)}" />/${Math.round(r.plan.splitRate * 100)}</span></div>
+              <div><span class="spec-label">Plan Fee</span><span class="spec-value">$<input class="spec-edit" data-field="monthly" value="${r.plan.monthly}" />/mo</span></div>
+              <div><span class="spec-label">Cap</span><span class="spec-value">$<input class="spec-edit" data-field="cap" value="${r.plan.cap.toLocaleString('en-US')}" />${r.plan.cap > 0 ? ` <span class="spec-after">then <input class="spec-edit spec-edit-split" data-field="postCapAgentShare" value="${Math.round((1 - r.plan.postCapRate) * 100)}" />/${Math.round(r.plan.postCapRate * 100)}</span>` : ''}</span></div>
+              <div><span class="spec-label">Per Transaction</span><span class="spec-value">$<input class="spec-edit" data-field="perTransaction" value="${r.plan.perTransaction}" /></span></div>
       ` : `
               <div><span class="spec-label">Split</span><span class="spec-value">${splitDisplay}</span></div>
-              <div><span class="spec-label">Plan Fee</span><span class="spec-value">${fmt(s.plan.monthly)}/mo</span></div>
-              <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(s.plan.cap)} ${capAfter}</span></div>
-              <div><span class="spec-label">Per Transaction</span><span class="spec-value">${fmt(s.plan.perTransaction)}</span></div>
+              <div><span class="spec-label">Plan Fee</span><span class="spec-value">${fmt(r.plan.monthly)}/mo</span></div>
+              <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(r.plan.cap)} ${capAfter}</span></div>
+              <div><span class="spec-label">Per Transaction</span><span class="spec-value">${fmt(r.plan.perTransaction)}</span></div>
       `;
+      const targetIndicator = targetNet > 0 ? `
+            <div class="target-indicator ${meetsTarget ? 'met' : 'short'}">
+              ${meetsTarget
+                ? `<span class="ti-icon">✓</span> Meets your $${Math.round(targetNet).toLocaleString('en-US')} goal${gap > 1 ? ` (+${fmt(gap)})` : ''}`
+                : `<span class="ti-icon">⚠</span> Short of $${Math.round(targetNet).toLocaleString('en-US')} goal by ${fmt(-gap)}`}
+            </div>` : '';
       return `
         <div class="plan ${isWinner ? 'winner' : ''}">
-          ${isWinner ? '<div class="winner-badge">Least Volume to Hit Goal</div>' : ''}
-          <div class="plan-header ${s.plan.color}">
-            <h3>${s.plan.editable ? `<input class="name-edit" data-field="name" value="${s.plan.name.replace(/"/g, '&quot;')}" />` : s.plan.name}</h3>
+          ${isWinner ? '<div class="winner-badge">Best RE/MAX Option</div>' : ''}
+          <div class="plan-header ${r.plan.color}">
+            <h3>${r.plan.editable ? `<input class="name-edit" data-field="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />` : r.plan.name}</h3>
             <div class="specs">${specs}</div>
           </div>
           <div class="plan-body">
-            <p class="net">${fmt(volume)}</p>
-            <div class="net-label">Volume Required to Hit Your Goal</div>
-            <div class="derived" style="margin-top: 0; margin-bottom: 14px;">
-              <div class="derived-card" style="padding: 10px 12px;">
-                <div class="dc-label" style="font-size: 10px;">Transactions</div>
-                <div class="dc-val" style="font-size: 18px;">${transactions}</div>
-                <div class="dc-sub">${listings}L · ${buyers}B</div>
-              </div>
-              <div class="derived-card" style="padding: 10px 12px;">
-                <div class="dc-label" style="font-size: 10px;">Required GCI</div>
-                <div class="dc-val" style="font-size: 18px;">${fmt(gci)}</div>
-                <div class="dc-sub">at ${commissionPct}% commission</div>
-              </div>
-            </div>
+            <p class="net">${fmt(r.net)}</p>
+            <div class="net-label">Estimated Net to Agent</div>
+            ${targetIndicator}
             <div class="breakdown">
               <div class="row"><span>Gross Commission</span><span class="val">${fmt(gci)}</span></div>
               <div class="row"><span>Brokerage Split</span><span class="val">−${fmt(r.splitCost)}</span></div>
               <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
-              <div class="row"><span>${s.plan.editable ? 'Annual Dues' : 'Annual RE/MAX Dues'}</span><span class="val">${s.plan.editable
-                ? `−$<input class="breakdown-edit" data-field="annualDues" value="${s.plan.annualDues.toLocaleString('en-US')}" />`
+              <div class="row"><span>${r.plan.editable ? 'Annual Dues' : 'Annual RE/MAX Dues'}</span><span class="val">${r.plan.editable
+                ? `−$<input class="breakdown-edit" data-field="annualDues" value="${r.plan.annualDues.toLocaleString('en-US')}" />`
                 : `−${fmt(r.dues)}`}</span></div>
-              <div class="row total"><span>Net to Agent</span><span class="val">${fmt(r.net)}</span></div>
+              <div class="row total"><span>Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
             </div>
             <div class="cap-note">
               ${r.capMet
-                ? `<span class="cap-met">✓ Cap met</span> at ${fmt(r.gciToCap)} GCI`
-                : (s.plan.cap > 0 ? `GCI to reach cap: ${fmt(r.gciToCap)}` : 'No cap on this plan')}
+                ? `<span class="cap-met">✓ Cap met</span> — GCI needed to cap: ${fmt(r.gciToCap)}`
+                : (r.plan.cap > 0 ? `GCI to reach cap: ${fmt(r.gciToCap)} (${gci > 0 ? Math.round(gci / r.gciToCap * 100) : 0}% there)` : 'No cap on this plan')}
             </div>
           </div>
         </div>
@@ -987,11 +996,20 @@
     const taxRate = state.taxRate / 100;
     const grossedUp = taxRate < 1 ? minimumIncome / (1 - taxRate) : 0;
     const commissionRate = state.commissionRate / 100;
-    const requiredVolume = commissionRate > 0 ? grossedUp / commissionRate : 0;
     const listingPct = state.listingPct;
+    const avgPrice = state.avgPrice;
+
+    // Solve for the volume the BEST RE/MAX plan needs to net the mantra target.
+    // That becomes the "required volume" shown to the agent.
+    let requiredGci = 0, requiredVolume = 0;
+    if (grossedUp > 0 && commissionRate > 0 && avgPrice > 0) {
+      const solved = plans.map(p => solveRequiredGCI(p, grossedUp, state.commissionRate, avgPrice));
+      const best = solved.reduce((a, b) => (a.volume < b.volume ? a : b));
+      requiredGci = best.gci;
+      requiredVolume = best.volume;
+    }
     const listingVolume = requiredVolume * (listingPct / 100);
     const buyerVolume = requiredVolume * (1 - listingPct / 100);
-    const avgPrice = state.avgPrice;
     const listingCount = avgPrice > 0 ? Math.ceil(listingVolume / avgPrice) : 0;
     const buyerCount = avgPrice > 0 ? Math.ceil(buyerVolume / avgPrice) : 0;
     const totalTransactions = listingCount + buyerCount;
@@ -1025,7 +1043,7 @@
 
     // Step 7
     document.getElementById('payoffTarget').textContent = fmt(grossedUp);
-    renderPlans(grossedUp, state.commissionRate, avgPrice, listingPct);
+    renderPlans(requiredGci, totalTransactions, grossedUp);
 
     // Summary rail
     document.getElementById('srMinIncome').textContent = fmt(minimumIncome);
