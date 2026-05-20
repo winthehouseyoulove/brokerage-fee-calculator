@@ -38,9 +38,31 @@
     color: var(--header-text);
     padding: 32px 24px;
     text-align: center;
+    position: relative;
   }
   header h1 { margin: 0 0 6px; font-size: 28px; font-weight: 700; }
   header p { margin: 0; opacity: 0.9; font-size: 15px; }
+  .top-nav {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    display: flex;
+    gap: 4px;
+    font-size: 13px;
+  }
+  .top-nav a {
+    color: var(--header-text);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    opacity: 0.75;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .top-nav a:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+  .top-nav a.active { opacity: 1; background: rgba(255,255,255,0.12); font-weight: 600; }
+  @media (max-width: 600px) {
+    .top-nav { position: static; justify-content: center; margin-bottom: 12px; }
+  }
   .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
 
   .inputs {
@@ -384,6 +406,10 @@
 </head>
 <body>
 <header>
+  <nav class="top-nav">
+    <a href="index.html" class="active">Plan Comparison</a>
+    <a href="planning.html">Business Plan</a>
+  </nav>
   <h1>Brokerage Fee Calculator</h1>
   <p>RE/MAX Alliance — Compare your net income across plans</p>
 </header>
