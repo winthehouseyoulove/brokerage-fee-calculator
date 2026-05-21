@@ -321,39 +321,57 @@
     accent-color: var(--remax-red);
   }
 
-  /* Fork: line+arrow that points to whichever plan card is the winner */
+  /* Angled fork: dotted line angles from the Before-Tax tier to the winner card */
   .funnel-fork {
     width: 100%;
     max-width: 720px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    height: 56px;
+    position: relative;
   }
-  .funnel-fork .fork-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    visibility: hidden;
+  .funnel-fork .fork-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
   }
-  .funnel-fork.point-left .fork-col:first-child,
-  .funnel-fork.point-right .fork-col:last-child {
-    visibility: visible;
+  .funnel-fork .fork-svg line {
+    stroke: #b9b29a;
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+    vector-effect: non-scaling-stroke;
+    display: none;
   }
-  .funnel-fork .flow-line {
-    width: 0;
-    height: 18px;
-    border-left: 2px dotted #b9b29a;
+  .funnel-fork.point-left  .fork-svg .fl-left,
+  .funnel-fork.point-right .fork-svg .fl-right {
+    display: inline;
   }
-  .funnel-fork .flow-arrow {
-    width: 0;
-    height: 0;
+  .funnel-fork .arrowhead {
+    position: absolute;
+    bottom: -6px;
+    width: 0; height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
     border-top: 10px solid #b9b29a;
-    margin-top: -2px;
+    transform: translateX(-50%);
+    display: none;
   }
+  .funnel-fork .arrowhead.arrow-left  { left: 25%; }
+  .funnel-fork .arrowhead.arrow-right { left: 75%; }
+  .funnel-fork.point-left  .arrowhead.arrow-left,
+  .funnel-fork.point-right .arrowhead.arrow-right {
+    display: block;
+  }
+  .funnel-fork .fork-svg .fl-vert { display: none; }
+  .funnel-fork .arrowhead.arrow-center { left: 50%; display: none; }
   @media (max-width: 600px) {
-    .funnel-fork { grid-template-columns: 1fr; }
+    .funnel-fork { height: 32px; }
+    /* On mobile cards stack — use a centered vertical line + arrow */
+    .funnel-fork .fork-svg .fl-left,
+    .funnel-fork .fork-svg .fl-right { display: none !important; }
+    .funnel-fork .fork-svg .fl-vert { display: inline !important; }
+    .funnel-fork .arrowhead.arrow-left,
+    .funnel-fork .arrowhead.arrow-right { display: none !important; }
+    .funnel-fork .arrowhead.arrow-center { display: block !important; }
   }
   .flow-content .conn-value {
     font-weight: 700;
@@ -1004,18 +1022,16 @@
           <div class="tier-label">Before Tax Income</div>
         </div>
 
-        <!-- Fork: arrow points to the winning plan card -->
+        <!-- Fork: angled dotted line + arrow pointing to the winning plan card -->
         <div class="funnel-fork" id="flowToPlans">
-          <div class="fork-col">
-            <div class="flow-line"></div>
-            <div class="flow-line"></div>
-            <div class="flow-arrow"></div>
-          </div>
-          <div class="fork-col">
-            <div class="flow-line"></div>
-            <div class="flow-line"></div>
-            <div class="flow-arrow"></div>
-          </div>
+          <svg class="fork-svg" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">
+            <line class="fl-left"  x1="50" y1="0" x2="25" y2="50" />
+            <line class="fl-right" x1="50" y1="0" x2="75" y2="50" />
+            <line class="fl-vert"  x1="50" y1="0" x2="50" y2="50" />
+          </svg>
+          <div class="arrowhead arrow-left"></div>
+          <div class="arrowhead arrow-right"></div>
+          <div class="arrowhead arrow-center"></div>
         </div>
 
         <!-- Embedded RE/MAX plan cards -->
