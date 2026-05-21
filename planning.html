@@ -677,6 +677,12 @@
     background: #232323;
     color: var(--bg);
   }
+  /* Non-winner card body text uses the same #232323 as its header */
+  .funnel-plan:not(.winner) .fp-gci,
+  .funnel-plan:not(.winner) .fp-row .fp-val,
+  .funnel-plan:not(.winner) .fp-row.fp-total {
+    color: #232323;
+  }
   .funnel-plan.winner .fp-header { background: var(--win); }
   .funnel-plan .fp-name {
     font-size: 15px;
@@ -1382,16 +1388,8 @@
 
     container.innerHTML = cards.map(r => {
       const isWinner = r.net === winnerNet;
-      const meetsTarget = r.net >= targetNet - 1;
-      const gap = r.net - targetNet;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
       const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
-      const targetIndicator = `
-            <div class="target-indicator ${meetsTarget ? 'met' : 'short'}" style="margin: 10px 0 4px;">
-              ${meetsTarget
-                ? `<span class="ti-icon">✓</span> Meets your ${fmt(targetNet)} goal`
-                : `<span class="ti-icon">⚠</span> Short by ${fmt(-gap)}`}
-            </div>`;
       return `
         <div class="funnel-plan ${isWinner ? 'winner' : ''}">
           ${isWinner ? '<div class="fp-winner-badge">Best Option</div>' : ''}
@@ -1407,7 +1405,6 @@
           <div class="fp-body">
             <div class="fp-gci-label">Estimated Net (Before Tax)</div>
             <div class="fp-gci">${fmt(r.net)}</div>
-            ${targetIndicator}
             <div class="fp-breakdown">
               <div class="fp-row"><span>GCI (${sharedTxn} txns)</span><span class="fp-val">${fmt(sharedGci)}</span></div>
               <div class="fp-row"><span>Brokerage Split</span><span class="fp-val">−${fmt(r.splitCost)}</span></div>
