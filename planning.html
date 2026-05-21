@@ -1186,6 +1186,7 @@
         <div class="funnel-tier t2">
           <div class="tier-num" id="grossedUp">$0</div>
           <div class="tier-label">Before Tax Income</div>
+          <div class="tier-sub"><span id="personalGrossed">$0</span> personal &nbsp;+&nbsp; <span id="businessGrossed">$0</span> business</div>
         </div>
 
         <!-- Flow: straight vertical from Before Tax Income → Plans -->
@@ -1445,6 +1446,8 @@
     // Funnel tiers
     document.getElementById('minimumIncome').textContent = fmt(minimumIncome);
     document.getElementById('grossedUp').textContent = fmt(grossedUp);
+    document.getElementById('personalGrossed').textContent = fmt(personalGrossed);
+    document.getElementById('businessGrossed').textContent = fmt(businessGrossed);
     document.getElementById('requiredVolume').textContent = fmt(requiredVolume);
     document.getElementById('totalTransactions').textContent = totalTransactions;
   }
