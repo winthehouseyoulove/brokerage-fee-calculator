@@ -416,6 +416,7 @@
   .funnel-tier.t1 { background: var(--remax-blue); max-width: 360px; }
   .funnel-tier.t2 { background: #2a4a78; max-width: 500px; }
   .funnel-tier.t3 { background: var(--remax-red); max-width: 720px; }
+  .funnel-tier.t4 { background: var(--remax-red); max-width: 420px; }
   .funnel-tier .tier-step {
     font-size: 10px;
     font-weight: 700;
@@ -1163,6 +1164,19 @@
           <input type="range" id="avgPriceSlider" class="apc-slider" min="100000" max="500000" step="5000" value="400000" />
         </div>
 
+        <!-- Flow: simple (Avg Price → Transactions) -->
+        <div class="funnel-flow simple">
+          <div class="flow-line"></div>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
+        </div>
+
+        <!-- Tier 4: Total Transactions / Year -->
+        <div class="funnel-tier t4">
+          <div class="tier-num" id="totalTransactions">0</div>
+          <div class="tier-label">Total Transactions / Year</div>
+        </div>
+
       </div>
     </div>
 
@@ -1202,12 +1216,6 @@
           <div class="dc-label">Buyer Deals Needed</div>
           <div class="dc-val" id="buyerCount">0</div>
           <div class="dc-sub" id="buyerCountSub">at avg sale price</div>
-        </div>
-      </div>
-      <div class="derived" style="grid-template-columns: 1fr;">
-        <div class="derived-card" style="background: #f3eee0;">
-          <div class="dc-label">Total Transactions / Year</div>
-          <div class="dc-val" id="totalTransactions" style="color: var(--remax-red);">0</div>
         </div>
       </div>
     </div>
