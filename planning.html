@@ -320,6 +320,41 @@
     flex: 0 0 180px;
     accent-color: var(--remax-red);
   }
+
+  /* Fork: line+arrow that points to whichever plan card is the winner */
+  .funnel-fork {
+    width: 100%;
+    max-width: 720px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .funnel-fork .fork-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    visibility: hidden;
+  }
+  .funnel-fork.point-left .fork-col:first-child,
+  .funnel-fork.point-right .fork-col:last-child {
+    visibility: visible;
+  }
+  .funnel-fork .flow-line {
+    width: 0;
+    height: 18px;
+    border-left: 2px dotted #b9b29a;
+  }
+  .funnel-fork .flow-arrow {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #b9b29a;
+    margin-top: -2px;
+  }
+  @media (max-width: 600px) {
+    .funnel-fork { grid-template-columns: 1fr; }
+  }
   .flow-content .conn-value {
     font-weight: 700;
     color: var(--text);
@@ -969,11 +1004,18 @@
           <div class="tier-label">Before Tax Income</div>
         </div>
 
-        <!-- Flow: simple (Tier 2 → Plans) -->
-        <div class="funnel-flow simple">
-          <div class="flow-line"></div>
-          <div class="flow-line"></div>
-          <div class="flow-arrow"></div>
+        <!-- Fork: arrow points to the winning plan card -->
+        <div class="funnel-fork" id="flowToPlans">
+          <div class="fork-col">
+            <div class="flow-line"></div>
+            <div class="flow-line"></div>
+            <div class="flow-arrow"></div>
+          </div>
+          <div class="fork-col">
+            <div class="flow-line"></div>
+            <div class="flow-line"></div>
+            <div class="flow-arrow"></div>
+          </div>
         </div>
 
         <!-- Embedded RE/MAX plan cards -->
@@ -1197,6 +1239,12 @@
 
     const cards = plans.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
     const winnerNet = Math.max(...cards.map(c => c.net));
+    const winnerIdx = cards.findIndex(c => c.net === winnerNet);
+    const fork = document.getElementById('flowToPlans');
+    if (fork) {
+      fork.classList.toggle('point-left', winnerIdx === 0);
+      fork.classList.toggle('point-right', winnerIdx === 1);
+    }
 
     container.innerHTML = cards.map(r => {
       const isWinner = r.net === winnerNet;
