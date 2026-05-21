@@ -386,6 +386,31 @@
     border-color: var(--remax-blue);
     background: var(--field-bg-focus);
   }
+  .conn-inline-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border);
+    border-radius: 0;
+    color: var(--text);
+    font-size: inherit;
+    font-family: inherit;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    padding: 0 2px;
+    height: auto;
+    field-sizing: content;
+    width: auto;
+    min-width: 1ch;
+    text-align: center;
+  }
+  .conn-inline-input:focus {
+    outline: none;
+    border-bottom-color: var(--text);
+  }
+  .conn-sentence {
+    color: var(--text);
+    font-size: 14px;
+  }
   @media (max-width: 600px) {
     .funnel-conn {
       flex-direction: column;
@@ -804,11 +829,7 @@
 
         <!-- Connector: commission -->
         <div class="funnel-conn">
-<span class="conn-label">÷ commission rate</span>
-          <div class="conn-control">
-            <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-pct-input" />
-            <span class="conn-value">%</span>
-          </div>
+          <span class="conn-sentence">Divided by commission rate of <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-inline-input" />%</span>
         </div>
 
         <!-- Tier 3: Required Volume -->
