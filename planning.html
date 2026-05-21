@@ -409,13 +409,13 @@
   .funnel-tier {
     border-radius: 12px;
     padding: 18px 28px;
-    color: white;
+    color: var(--bg);
     text-align: center;
     width: 100%;
     transition: transform 0.15s;
   }
   .funnel-tier.t1 { background: var(--remax-blue); max-width: 360px; }
-  .funnel-tier.t2 { background: #2a4a78; max-width: 500px; }
+  .funnel-tier.t2 { background: var(--remax-blue); max-width: 500px; }
   .funnel-tier.t3 { background: var(--remax-red); max-width: 720px; }
   .funnel-tier.t4 { background: var(--remax-red); max-width: 420px; }
   .funnel-tier .tier-step {
@@ -674,8 +674,8 @@
   }
   .funnel-plan .fp-header {
     padding: 12px 14px;
-    background: var(--remax-blue);
-    color: white;
+    background: #0043ff;
+    color: var(--bg);
   }
   .funnel-plan.winner .fp-header { background: var(--win); }
   .funnel-plan .fp-name {
