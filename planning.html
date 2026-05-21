@@ -412,6 +412,107 @@
     font-size: 13px;
     font-weight: 600;
   }
+
+  /* Funnel-embedded plan cards (2 RE/MAX plans between Before Tax Income and Volume) */
+  .funnel-plans {
+    width: 100%;
+    max-width: 720px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 14px 0 4px;
+  }
+  @media (max-width: 600px) { .funnel-plans { grid-template-columns: 1fr; } }
+  .funnel-plan {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .funnel-plan.winner {
+    border-color: var(--win);
+    box-shadow: 0 6px 16px rgba(170,17,32,0.18);
+  }
+  .funnel-plan .fp-header {
+    padding: 12px 14px;
+    background: var(--remax-blue);
+    color: white;
+  }
+  .funnel-plan.winner .fp-header { background: var(--win); }
+  .funnel-plan .fp-name {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .funnel-plan .fp-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    font-size: 11px;
+    opacity: 0.9;
+  }
+  .funnel-plan .fp-specs .fp-spec-label {
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    opacity: 0.7;
+    font-size: 9px;
+  }
+  .funnel-plan .fp-body { padding: 14px; }
+  .funnel-plan .fp-gci-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .funnel-plan .fp-gci {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    margin-top: 2px;
+  }
+  .funnel-plan .fp-breakdown {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .funnel-plan .fp-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    color: var(--muted);
+  }
+  .funnel-plan .fp-row .fp-val {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .funnel-plan .fp-row.fp-total {
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+    padding-top: 6px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .funnel-plan .fp-winner-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: white;
+    color: var(--win);
+    padding: 4px 8px;
+    border-radius: 0 10px 0 9px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: -1px 1px 4px rgba(0,0,0,0.08);
+    z-index: 1;
+  }
   @media (max-width: 600px) {
     .funnel-conn {
       flex-direction: column;
@@ -828,15 +929,18 @@
           <div class="tier-label">Before Tax Income</div>
         </div>
 
+        <!-- Embedded RE/MAX plan cards -->
+        <div class="funnel-plans" id="funnelPlans"></div>
+
         <!-- Connector: commission -->
         <div class="funnel-conn">
           <span class="conn-sentence">Divided by commission rate of <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-inline-input" />%</span>
         </div>
 
-        <!-- Tier 3: Required Volume -->
+        <!-- Tier 3: Required Volume (best plan) -->
         <div class="funnel-tier t3">
           <div class="tier-num" id="requiredVolume">$0</div>
-          <div class="tier-label">Annual Sales Volume to Hit Your Goal</div>
+          <div class="tier-label">Annual Sales Volume (Best RE/MAX Plan)</div>
         </div>
 
       </div>
@@ -895,14 +999,11 @@
       </div>
     </div>
 
-    <!-- Step 7: Plan Comparison -->
+    <!-- Step 7: Compare to Current Plan -->
     <div class="step">
       <div class="step-num">7</div>
-      <h2>Which Plan Gets You There?</h2>
-      <p class="step-sub">At the required volume from Step 4, here's how each plan compares against your goal.</p>
-      <div class="payoff-banner" id="payoffBanner">
-        Goal: net <strong id="payoffTarget">$0</strong>/yr pre-tax to fund your life and business. The plan that gets you there is your <strong>Best RE/MAX Option</strong> below.
-      </div>
+      <h2>Compare to Your Current Plan</h2>
+      <p class="step-sub">At the same <strong id="payoffTarget">$0</strong>/yr pre-tax goal, here's the volume your current plan would require. Edit the fields to match what you have today.</p>
       <div class="plans" id="plans"></div>
     </div>
 
@@ -1052,16 +1153,69 @@
     return { gci, volume, transactions: txn, result: last, feasible: last.net >= targetNet - 1 };
   }
 
-  // ---------- Render plan cards (Step 7) ----------
-  function renderPlans(gci, transactions, targetNet) {
-    const allPlans = [...plans, currentPlan];
-    const results = allPlans.map(p => ({ plan: p, ...compute(p, gci, transactions, 0) }));
-    const remaxResults = results.filter(r => !r.plan.editable);
-    const winnerNet = Math.max(...remaxResults.map(r => r.net));
+  // ---------- Render RE/MAX plan cards INSIDE the funnel ----------
+  function renderFunnelPlans(targetNet, commissionPct, avgPrice) {
+    const container = document.getElementById('funnelPlans');
+    if (targetNet <= 0 || commissionPct <= 0 || avgPrice <= 0) {
+      container.innerHTML = '';
+      return { volume: 0, gci: 0, transactions: 0 };
+    }
+    const solved = plans.map(p => ({ plan: p, ...solveRequiredGCI(p, targetNet, commissionPct, avgPrice) }));
+    const best = solved.reduce((a, b) => (a.volume < b.volume ? a : b));
 
+    container.innerHTML = solved.map(s => {
+      const isWinner = s.plan === best.plan;
+      const r = s.result;
+      const splitDisplay = `${Math.round((1 - s.plan.splitRate) * 100)}/${Math.round(s.plan.splitRate * 100)}`;
+      const postCapDisplay = `${Math.round((1 - s.plan.postCapRate) * 100)}/${Math.round(s.plan.postCapRate * 100)}`;
+      return `
+        <div class="funnel-plan ${isWinner ? 'winner' : ''}">
+          ${isWinner ? '<div class="fp-winner-badge">Best Option</div>' : ''}
+          <div class="fp-header">
+            <h4 class="fp-name">${s.plan.name}</h4>
+            <div class="fp-specs">
+              <div><div class="fp-spec-label">Split</div>${splitDisplay}</div>
+              <div><div class="fp-spec-label">Plan Fee</div>$${s.plan.monthly}/mo</div>
+              <div><div class="fp-spec-label">Cap</div>${fmt(s.plan.cap)} → ${postCapDisplay}</div>
+              <div><div class="fp-spec-label">Per Txn</div>$${s.plan.perTransaction}</div>
+            </div>
+          </div>
+          <div class="fp-body">
+            <div class="fp-gci-label">Required Volume</div>
+            <div class="fp-gci">${fmt(s.volume)}</div>
+            <div class="fp-breakdown">
+              <div class="fp-row"><span>GCI (${s.transactions} txns)</span><span class="fp-val">${fmt(s.gci)}</span></div>
+              <div class="fp-row"><span>Brokerage Split</span><span class="fp-val">−${fmt(r.splitCost)}</span></div>
+              <div class="fp-row"><span>Monthly Fees (×12)</span><span class="fp-val">−${fmt(r.monthlyTotal)}</span></div>
+              <div class="fp-row"><span>Transaction Fees</span><span class="fp-val">−${fmt(r.transactionTotal)}</span></div>
+              <div class="fp-row"><span>Annual Dues</span><span class="fp-val">−${fmt(r.dues)}</span></div>
+              <div class="fp-row fp-total"><span>Net (Before Tax)</span><span class="fp-val">${fmt(r.net)}</span></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return { volume: best.volume, gci: best.gci, transactions: best.transactions };
+  }
+
+  // ---------- Render custom/current plan card (Step 7 below funnel) ----------
+  function renderPlans(targetNet, commissionPct, avgPrice) {
     const container = document.getElementById('plans');
+    if (targetNet <= 0 || commissionPct <= 0 || avgPrice <= 0) {
+      container.innerHTML = '';
+      return;
+    }
+    const s = { plan: currentPlan, ...solveRequiredGCI(currentPlan, targetNet, commissionPct, avgPrice) };
+    const r = s.result;
+    const gci = s.gci;
+    const transactions = s.transactions;
+    const volume = s.volume;
+    // Render array form keeps the existing event delegation working
+    const results = [{ plan: currentPlan, ...r, gci, transactions, volume }];
+
     container.innerHTML = results.map(r => {
-      const isWinner = !r.plan.editable && r.net === winnerNet;
+      const isWinner = false; // custom plan is the comparison, not a winner
       const meetsTarget = r.net >= targetNet - 1;
       const gap = r.net - targetNet;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
@@ -1078,37 +1232,31 @@
               <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(r.plan.cap)} ${capAfter}</span></div>
               <div><span class="spec-label">Per Transaction</span><span class="spec-value">${fmt(r.plan.perTransaction)}</span></div>
       `;
-      const targetIndicator = targetNet > 0 ? `
-            <div class="target-indicator ${meetsTarget ? 'met' : 'short'}">
-              ${meetsTarget
-                ? `<span class="ti-icon">✓</span> Meets your $${Math.round(targetNet).toLocaleString('en-US')} goal${gap > 1 ? ` (+${fmt(gap)})` : ''}`
-                : `<span class="ti-icon">⚠</span> Short of $${Math.round(targetNet).toLocaleString('en-US')} goal by ${fmt(-gap)}`}
-            </div>` : '';
       return `
-        <div class="plan ${isWinner ? 'winner' : ''}">
-          ${isWinner ? '<div class="winner-badge">Best RE/MAX Option</div>' : ''}
+        <div class="plan">
           <div class="plan-header ${r.plan.color}">
             <h3>${r.plan.editable ? `<input class="name-edit" data-field="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />` : r.plan.name}</h3>
             <div class="specs">${specs}</div>
           </div>
           <div class="plan-body">
-            <p class="net">${fmt(r.net)}</p>
-            <div class="net-label">Estimated Net to Agent</div>
-            ${targetIndicator}
+            <p class="net">${fmt(r.volume)}</p>
+            <div class="net-label">Required Volume to Hit Your Goal</div>
             <div class="breakdown">
-              <div class="row"><span>Gross Commission</span><span class="val">${fmt(gci)}</span></div>
+              <div class="row"><span>GCI (${transactions} txns)</span><span class="val">${fmt(gci)}</span></div>
               <div class="row"><span>Brokerage Split</span><span class="val">−${fmt(r.splitCost)}</span></div>
               <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
-              <div class="row"><span>${r.plan.editable ? 'Annual Dues' : 'Annual RE/MAX Dues'}</span><span class="val">${r.plan.editable
+              <div class="row"><span>Annual Dues</span><span class="val">${r.plan.editable
                 ? `−$<input class="breakdown-edit" data-field="annualDues" value="${r.plan.annualDues.toLocaleString('en-US')}" />`
                 : `−${fmt(r.dues)}`}</span></div>
-              <div class="row total"><span>Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>
+              <div class="row total"><span>Net Before Tax</span><span class="val">${fmt(r.net)}</span></div>
             </div>
             <div class="cap-note">
-              ${r.capMet
-                ? `<span class="cap-met">✓ Cap met</span> — GCI needed to cap: ${fmt(r.gciToCap)}`
-                : (r.plan.cap > 0 ? `GCI to reach cap: ${fmt(r.gciToCap)} (${gci > 0 ? Math.round(gci / r.gciToCap * 100) : 0}% there)` : 'No cap on this plan')}
+              ${r.plan.cap > 0
+                ? (r.capMet
+                    ? `<span class="cap-met">✓ Cap met</span> — GCI needed to cap: ${fmt(r.gciToCap)}`
+                    : `GCI to reach cap: ${fmt(r.gciToCap)} (${gci > 0 ? Math.round(gci / r.gciToCap * 100) : 0}% there)`)
+                : 'No cap on this plan'}
             </div>
           </div>
         </div>
@@ -1127,15 +1275,11 @@
     const listingPct = state.listingPct;
     const avgPrice = state.avgPrice;
 
-    // Solve for the volume the BEST RE/MAX plan needs to net the mantra target.
-    // That becomes the "required volume" shown to the agent.
-    let requiredGci = 0, requiredVolume = 0;
-    if (grossedUp > 0 && commissionRate > 0 && avgPrice > 0) {
-      const solved = plans.map(p => solveRequiredGCI(p, grossedUp, state.commissionRate, avgPrice));
-      const best = solved.reduce((a, b) => (a.volume < b.volume ? a : b));
-      requiredGci = best.gci;
-      requiredVolume = best.volume;
-    }
+    // Render the 2 RE/MAX plan cards embedded in the funnel, and grab the
+    // best plan's required volume for the bottom tier and downstream steps.
+    const best = renderFunnelPlans(grossedUp, state.commissionRate, avgPrice);
+    const requiredGci = best.gci;
+    const requiredVolume = best.volume;
     const listingVolume = requiredVolume * (listingPct / 100);
     const buyerVolume = requiredVolume * (1 - listingPct / 100);
     const listingCount = avgPrice > 0 ? Math.ceil(listingVolume / avgPrice) : 0;
@@ -1169,9 +1313,9 @@
     document.getElementById('buyerCountSub').textContent = `at ${fmt(avgPrice)} avg`;
     document.getElementById('totalTransactions').textContent = totalTransactions;
 
-    // Step 7
+    // Step 7 — render the custom/current plan card
     document.getElementById('payoffTarget').textContent = fmt(grossedUp);
-    renderPlans(requiredGci, totalTransactions, grossedUp);
+    renderPlans(grossedUp, state.commissionRate, avgPrice);
 
     // Summary rail
     document.getElementById('srMinIncome').textContent = fmt(minimumIncome);
