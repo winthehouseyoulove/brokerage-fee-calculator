@@ -194,6 +194,11 @@
     gap: 24px;
   }
   @media (max-width: 720px) { .expense-cols { grid-template-columns: 1fr; } }
+  .expense-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .expense-col .col-total { margin-top: auto; }
   .expense-col h3 {
     margin: 0 0 12px;
     font-size: 13px;
