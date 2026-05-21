@@ -281,44 +281,121 @@
     margin-top: 6px;
   }
 
-  .control-row {
-    display: grid;
-    grid-template-columns: 1fr 260px;
-    gap: 24px;
-    align-items: center;
-  }
-  @media (max-width: 720px) {
-    .control-row { grid-template-columns: 1fr; }
-    .big-number { text-align: left; }
-  }
-  .control-row .control-left {
-    min-width: 0;
-  }
-  .mantra-eq {
+  /* Pyramid funnel for Steps 2-4 */
+  .funnel-step h2 { margin-bottom: 4px; }
+  .funnel {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 10px;
-    font-size: 14px;
-    color: var(--muted);
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin-top: 20px;
+  }
+  .funnel-tier {
+    border-radius: 12px;
+    padding: 18px 28px;
+    color: white;
+    text-align: center;
+    width: 100%;
+    transition: transform 0.15s;
+  }
+  .funnel-tier.t1 { background: var(--remax-blue); max-width: 360px; }
+  .funnel-tier.t2 { background: #2a4a78; max-width: 500px; }
+  .funnel-tier.t3 { background: var(--remax-red); max-width: 720px; }
+  .funnel-tier .tier-step {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+  .funnel-tier .tier-num {
+    font-size: 36px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .funnel-tier.t3 .tier-num { font-size: 40px; }
+  .funnel-tier .tier-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.85;
+    margin-top: 6px;
+  }
+  .funnel-tier .tier-sub {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 4px;
     font-variant-numeric: tabular-nums;
   }
-  .mantra-eq .me-val {
-    font-size: 18px;
+  .funnel-conn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    color: var(--muted);
+    font-size: 13px;
+    min-height: 60px;
+  }
+  .funnel-conn .conn-arrow {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1;
+    opacity: 0.6;
+  }
+  .funnel-conn .conn-label {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .funnel-conn .conn-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+  .funnel-conn input[type="range"] {
+    flex: 1;
+    accent-color: var(--remax-red);
+    max-width: 200px;
+  }
+  .funnel-conn .conn-value {
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: right;
+  }
+  .funnel-conn .conn-pct-input {
+    width: 48px;
+    height: 32px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--field-bg);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
     font-weight: 600;
     color: var(--text);
   }
-  .mantra-eq .me-op {
-    font-size: 18px;
-    color: var(--muted);
-    font-weight: 400;
+  .funnel-conn .conn-pct-input:focus {
+    outline: none;
+    border-color: var(--remax-blue);
+    background: var(--field-bg-focus);
   }
-  .mantra-eq .me-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--muted);
-    margin-right: 4px;
+  @media (max-width: 600px) {
+    .funnel-conn {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .funnel-conn .conn-control { width: 100%; }
+    .funnel-tier { padding: 14px 18px; }
+    .funnel-tier .tier-num { font-size: 28px; }
+    .funnel-tier.t3 .tier-num { font-size: 32px; }
   }
   .slider-wrap label {
     display: block;
@@ -697,65 +774,55 @@
       </div>
     </div>
 
-    <!-- Step 2: Entrepreneur's Mantra -->
-    <div class="step">
+    <!-- Steps 2-4: Income → Volume funnel -->
+    <div class="step funnel-step">
       <div class="step-num">2</div>
-      <h2>Entrepreneur's Mantra</h2>
-      <p class="step-sub">Your minimum acceptable income — what you need to fund your life <em>and</em> your business.</p>
-      <div class="control-row">
-        <div class="control-left">
-          <div class="mantra-eq">
-            <div><span class="me-label">Personal</span><span class="me-val" id="mantraPersonal">$0</span></div>
-            <span class="me-op">+</span>
-            <div><span class="me-label">Business</span><span class="me-val" id="mantraBusiness">$0</span></div>
-          </div>
-        </div>
-        <div class="big-number">
-          <div class="bn-val" id="minimumIncome">$0</div>
-          <div class="bn-label">Min Acceptable Income (Take-Home)</div>
-        </div>
-      </div>
-    </div>
+      <h2>From Income Need → Required Volume</h2>
+      <p class="step-sub">Walk down: your take-home need, grossed up for taxes, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
+      <div class="funnel">
 
-    <!-- Step 3: Gross Up for Taxes -->
-    <div class="step">
-      <div class="step-num">3</div>
-      <h2>Gross Up for Taxes</h2>
-      <p class="step-sub">You don't keep every dollar — back into the pre-tax income you need.</p>
-      <div class="control-row">
-        <div class="control-left">
-          <div class="slider-wrap">
-            <label>Effective Tax Rate</label>
+        <!-- Tier 1: Mantra -->
+        <div class="funnel-tier t1">
+          <div class="tier-step">Step 2 · Mantra</div>
+          <div class="tier-num" id="minimumIncome">$0</div>
+          <div class="tier-label">Min Acceptable Income (Take-Home)</div>
+          <div class="tier-sub"><span id="mantraPersonal">$0</span> personal + <span id="mantraBusiness">$0</span> business</div>
+        </div>
+
+        <!-- Connector: tax -->
+        <div class="funnel-conn">
+          <span class="conn-arrow">▼</span>
+          <span class="conn-label">Step 3 · Gross up for taxes</span>
+          <div class="conn-control">
             <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
-            <div class="slider-value"><span id="taxRateLabel">30</span>%</div>
+            <span class="conn-value"><span id="taxRateLabel">30</span>%</span>
           </div>
         </div>
-        <div class="big-number">
-          <div class="bn-val" id="grossedUp">$0</div>
-          <div class="bn-label">Pre-Tax Income Needed</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Step 4: Convert to Sales Volume -->
-    <div class="step">
-      <div class="step-num">4</div>
-      <h2>Convert to Sales Volume</h2>
-      <p class="step-sub">The volume needed to net your goal — solved against the best RE/MAX plan, so brokerage costs are already accounted for.</p>
-      <div class="control-row">
-        <div class="control-left">
-          <div class="number-field">
-            <label>Average Commission Rate</label>
-            <div class="nf-input">
-              <input type="text" inputmode="decimal" id="commissionRate" value="3" />
-              <span class="suffix">%</span>
-            </div>
+        <!-- Tier 2: Grossed up -->
+        <div class="funnel-tier t2">
+          <div class="tier-step">Step 3</div>
+          <div class="tier-num" id="grossedUp">$0</div>
+          <div class="tier-label">Pre-Tax Income Needed</div>
+        </div>
+
+        <!-- Connector: commission -->
+        <div class="funnel-conn">
+          <span class="conn-arrow">▼</span>
+          <span class="conn-label">Step 4 · ÷ commission rate</span>
+          <div class="conn-control">
+            <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-pct-input" />
+            <span class="conn-value">%</span>
           </div>
         </div>
-        <div class="big-number">
-          <div class="bn-val" id="requiredVolume">$0</div>
-          <div class="bn-label">Required Annual Sales Volume</div>
+
+        <!-- Tier 3: Required Volume -->
+        <div class="funnel-tier t3">
+          <div class="tier-step">Step 4 · Required volume</div>
+          <div class="tier-num" id="requiredVolume">$0</div>
+          <div class="tier-label">Annual Sales Volume to Hit Your Goal</div>
         </div>
+
       </div>
     </div>
 
