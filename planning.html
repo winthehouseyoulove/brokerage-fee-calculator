@@ -38,6 +38,9 @@
     color: var(--text);
     line-height: 1.5;
   }
+  input, textarea, button, select {
+    font-family: inherit;
+  }
   header {
     background: var(--header-bg);
     color: var(--header-text);
@@ -262,6 +265,14 @@
     font-size: 15px;
   }
   .col-total .val { font-variant-numeric: tabular-nums; }
+  .col-total .ct-unit {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 1px;
+  }
 
   .big-number {
     text-align: right;
@@ -981,20 +992,26 @@
     <div class="step expense-step">
       <div class="step-num">1</div>
       <h2>Personal &amp; Business Expenses</h2>
-      <p class="step-sub">What does it cost to live, and what does it cost to run the business? Enter annual amounts.</p>
+      <p class="step-sub">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
       <div class="expense-cols">
         <div class="expense-col">
           <h3>Personal</h3>
           <div id="personalList"></div>
           <button class="li-add" data-add="personal">+ Add personal expense</button>
-          <div class="col-total"><span>Personal total</span><span class="val" id="personalTotal">$0</span></div>
+          <div class="col-total">
+            <span>Personal total</span>
+            <span class="val"><span id="personalMonthly">$0</span><span class="ct-unit">/mo</span> · <span id="personalAnnual">$0</span><span class="ct-unit">/yr</span></span>
+          </div>
         </div>
         <div class="expense-col">
           <h3>Business (Outside Brokerage)</h3>
           <p class="step-sub" style="padding-left: 0; margin: -8px 0 12px; font-size: 12px;">Excludes MLS dues, monthly plan fees, and per-transaction fees — those live in the plan comparison below.</p>
           <div id="businessList"></div>
           <button class="li-add" data-add="business">+ Add business expense</button>
-          <div class="col-total"><span>Business total</span><span class="val" id="businessTotal">$0</span></div>
+          <div class="col-total">
+            <span>Business total</span>
+            <span class="val"><span id="businessMonthly">$0</span><span class="ct-unit">/mo</span> · <span id="businessAnnual">$0</span><span class="ct-unit">/yr</span></span>
+          </div>
         </div>
       </div>
     </div>
@@ -1030,16 +1047,11 @@
           <div class="tier-label">Before Tax Income</div>
         </div>
 
-        <!-- Fork: angled dotted line + arrow pointing to the winning plan card -->
-        <div class="funnel-fork" id="flowToPlans">
-          <svg class="fork-svg" viewBox="0 0 100 50" preserveAspectRatio="none" aria-hidden="true">
-            <line class="fl-left"  x1="50" y1="0" x2="25" y2="50" />
-            <line class="fl-right" x1="50" y1="0" x2="75" y2="50" />
-            <line class="fl-vert"  x1="50" y1="0" x2="50" y2="50" />
-          </svg>
-          <div class="arrowhead arrow-left"></div>
-          <div class="arrowhead arrow-right"></div>
-          <div class="arrowhead arrow-center"></div>
+        <!-- Flow: straight vertical from Before Tax Income → Plans -->
+        <div class="funnel-flow simple">
+          <div class="flow-line"></div>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
         </div>
 
         <!-- Embedded RE/MAX plan cards -->
@@ -1135,22 +1147,23 @@
 <script>
   // ---------- State ----------
   const state = {
+    // Amounts are monthly
     personal: [
-      { label: 'Housing / Mortgage', amount: 30000 },
-      { label: 'Food / Groceries', amount: 12000 },
-      { label: 'Transportation', amount: 8000 },
-      { label: 'Insurance', amount: 6000 },
-      { label: 'Healthcare', amount: 6000 },
-      { label: 'Savings / Retirement', amount: 12000 },
-      { label: 'Other Living Expenses', amount: 6000 },
+      { label: 'Housing / Mortgage', amount: 2500 },
+      { label: 'Food / Groceries', amount: 1000 },
+      { label: 'Transportation', amount: 667 },
+      { label: 'Insurance', amount: 500 },
+      { label: 'Healthcare', amount: 500 },
+      { label: 'Savings / Retirement', amount: 1000 },
+      { label: 'Other Living Expenses', amount: 500 },
     ],
     business: [
-      { label: 'CRM / Software', amount: 1800 },
-      { label: 'Marketing / Advertising', amount: 6000 },
-      { label: 'Signs / Lockboxes', amount: 1200 },
-      { label: 'Transaction Coordinator', amount: 3000 },
-      { label: 'CE / Training', amount: 1000 },
-      { label: 'Professional Services (legal, tax)', amount: 1500 },
+      { label: 'CRM / Software', amount: 150 },
+      { label: 'Marketing / Advertising', amount: 500 },
+      { label: 'Signs / Lockboxes', amount: 100 },
+      { label: 'Transaction Coordinator', amount: 250 },
+      { label: 'CE / Training', amount: 83 },
+      { label: 'Professional Services (legal, tax)', amount: 125 },
     ],
     taxRate: 30,
     commissionRate: 3,
@@ -1263,12 +1276,6 @@
 
     const cards = plans.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
     const winnerNet = Math.max(...cards.map(c => c.net));
-    const winnerIdx = cards.findIndex(c => c.net === winnerNet);
-    const fork = document.getElementById('flowToPlans');
-    if (fork) {
-      fork.classList.toggle('point-left', winnerIdx === 0);
-      fork.classList.toggle('point-right', winnerIdx === 1);
-    }
 
     container.innerHTML = cards.map(r => {
       const isWinner = r.net === winnerNet;
@@ -1386,9 +1393,11 @@
 
   // ---------- Recompute everything ----------
   function recompute() {
-    const personalTotal = state.personal.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    const businessTotal = state.business.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    const minimumIncome = personalTotal + businessTotal;
+    const personalMonthly = state.personal.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const businessMonthly = state.business.reduce((s, x) => s + (Number(x.amount) || 0), 0);
+    const personalAnnual = personalMonthly * 12;
+    const businessAnnual = businessMonthly * 12;
+    const minimumIncome = personalAnnual + businessAnnual;
     const taxRate = state.taxRate / 100;
     const grossedUp = taxRate < 1 ? minimumIncome / (1 - taxRate) : 0;
     const commissionRate = state.commissionRate / 100;
@@ -1407,8 +1416,10 @@
     const totalTransactions = listingCount + buyerCount;
 
     // Step 1
-    document.getElementById('personalTotal').textContent = fmt(personalTotal);
-    document.getElementById('businessTotal').textContent = fmt(businessTotal);
+    document.getElementById('personalMonthly').textContent = fmt(personalMonthly);
+    document.getElementById('personalAnnual').textContent = fmt(personalAnnual);
+    document.getElementById('businessMonthly').textContent = fmt(businessMonthly);
+    document.getElementById('businessAnnual').textContent = fmt(businessAnnual);
 
     // Step 2
     document.getElementById('minimumIncome').textContent = fmt(minimumIncome);
