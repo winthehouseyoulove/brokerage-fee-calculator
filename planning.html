@@ -318,10 +318,10 @@
   }
   .flow-line {
     width: 0;
-    height: 14px;
+    height: 24px;
     border-left: 2px dotted #b9b29a;
   }
-  .funnel-flow.simple .flow-line { height: 18px; }
+  .funnel-flow.simple .flow-line { height: 32px; }
   .flow-content {
     display: flex;
     align-items: center;
@@ -1464,6 +1464,13 @@
   // ---------- Initial render ----------
   renderLineItems('personal');
   renderLineItems('business');
+  // Center the slider on the median: set max so the default value sits in the middle.
+  (function tuneAvgPriceSlider() {
+    const slider = document.getElementById('avgPriceSlider');
+    const min = Number(slider.min);
+    const max = min + 2 * (state.avgPrice - min);
+    slider.max = String(Math.max(max, state.avgPrice));
+  })();
   document.getElementById('avgPrice').value = state.avgPrice.toLocaleString('en-US');
   document.getElementById('avgPriceSlider').value = String(state.avgPrice);
   recompute();
