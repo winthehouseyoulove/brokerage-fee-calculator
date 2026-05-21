@@ -1245,54 +1245,6 @@
       </div>
     </div>
 
-    <!-- Step 5: Listing / Buyer Split -->
-    <div class="step">
-      <div class="step-num">5</div>
-      <h2>Listing / Buyer Split</h2>
-      <p class="step-sub">How will the volume be split between listings and buyer-side deals?</p>
-      <div class="slider-wrap">
-        <label>Listings <span id="listingPctLabel">50</span>% &nbsp;·&nbsp; Buyers <span id="buyerPctLabel">50</span>%</label>
-        <input type="range" id="listingPct" min="0" max="100" step="5" value="50" />
-      </div>
-      <div class="derived">
-        <div class="derived-card">
-          <div class="dc-label">Listing Volume</div>
-          <div class="dc-val" id="listingVolume">$0</div>
-        </div>
-        <div class="derived-card">
-          <div class="dc-label">Buyer Volume</div>
-          <div class="dc-val" id="buyerVolume">$0</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 6: Transaction Count -->
-    <div class="step">
-      <div class="step-num">6</div>
-      <h2>Transaction Count</h2>
-      <p class="step-sub">At the average sale price above, here's the transaction count you need.</p>
-      <div class="derived">
-        <div class="derived-card">
-          <div class="dc-label">Listings Needed</div>
-          <div class="dc-val" id="listingCount">0</div>
-          <div class="dc-sub" id="listingCountSub">at avg sale price</div>
-        </div>
-        <div class="derived-card">
-          <div class="dc-label">Buyer Deals Needed</div>
-          <div class="dc-val" id="buyerCount">0</div>
-          <div class="dc-sub" id="buyerCountSub">at avg sale price</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 7: Compare to Current Plan -->
-    <div class="step">
-      <div class="step-num">7</div>
-      <h2>Compare to Your Current Plan</h2>
-      <p class="step-sub">At the same volume above, here's what your current plan would net you. Edit the fields to match what you have today — goal is <strong id="payoffTarget">$0</strong>/yr pre-tax.</p>
-      <div class="plans" id="plans"></div>
-    </div>
-
   </div>
 
 </div>
@@ -1326,7 +1278,6 @@
     personalTaxRate: 20,
     businessTaxRate: 0,
     commissionRate: 3,
-    listingPct: 50,
     avgPrice: medianAvgPrice(),
   };
 
@@ -1340,20 +1291,6 @@
     const m = prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
     return Math.round(m / 1000) * 1000; // round to nearest $1k
   }
-
-  // Current plan for Step 7 (mirrors index.html's editable plan)
-  const currentPlan = {
-    key: 'current',
-    name: 'Your Current Plan',
-    color: 'gray',
-    editable: true,
-    monthly: 300,
-    annualDues: 0,
-    perTransaction: 100,
-    splitRate: 0.30,
-    cap: 0,
-    postCapRate: 0.30,
-  };
 
   const plans = [
     {
@@ -1491,76 +1428,6 @@
     return { volume: best.volume, gci: best.gci, transactions: best.transactions };
   }
 
-  // ---------- Render custom/current plan card (Step 7 below funnel) ----------
-  // Uses the shared volume from the best RE/MAX plan, so the agent sees what
-  // they would net at the SAME effort as the RE/MAX winner.
-  function renderPlans(targetNet, sharedGci, sharedTxn) {
-    const container = document.getElementById('plans');
-    if (targetNet <= 0 || sharedGci <= 0) {
-      container.innerHTML = '';
-      return;
-    }
-    const r = compute(currentPlan, sharedGci, sharedTxn, 0);
-    const gci = sharedGci;
-    const transactions = sharedTxn;
-    const results = [{ plan: currentPlan, ...r }];
-
-    container.innerHTML = results.map(r => {
-      const meetsTarget = r.net >= targetNet - 1;
-      const gap = r.net - targetNet;
-      const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
-      const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
-      const capAfter = r.plan.cap > 0 ? `<span class="spec-after">then ${postCapDisplay}</span>` : '';
-      const specs = r.plan.editable ? `
-              <div><span class="spec-label">Split</span><span class="spec-value"><input class="spec-edit spec-edit-split" data-field="agentShare" value="${Math.round((1 - r.plan.splitRate) * 100)}" />/${Math.round(r.plan.splitRate * 100)}</span></div>
-              <div><span class="spec-label">Plan Fee</span><span class="spec-value">$<input class="spec-edit" data-field="monthly" value="${r.plan.monthly}" />/mo</span></div>
-              <div><span class="spec-label">Cap</span><span class="spec-value">$<input class="spec-edit" data-field="cap" value="${r.plan.cap.toLocaleString('en-US')}" />${r.plan.cap > 0 ? ` <span class="spec-after">then <input class="spec-edit spec-edit-split" data-field="postCapAgentShare" value="${Math.round((1 - r.plan.postCapRate) * 100)}" />/${Math.round(r.plan.postCapRate * 100)}</span>` : ''}</span></div>
-              <div><span class="spec-label">Per Transaction</span><span class="spec-value">$<input class="spec-edit" data-field="perTransaction" value="${r.plan.perTransaction}" /></span></div>
-      ` : `
-              <div><span class="spec-label">Split</span><span class="spec-value">${splitDisplay}</span></div>
-              <div><span class="spec-label">Plan Fee</span><span class="spec-value">${fmt(r.plan.monthly)}/mo</span></div>
-              <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(r.plan.cap)} ${capAfter}</span></div>
-              <div><span class="spec-label">Per Transaction</span><span class="spec-value">${fmt(r.plan.perTransaction)}</span></div>
-      `;
-      const targetIndicator = `
-            <div class="target-indicator ${meetsTarget ? 'met' : 'short'}">
-              ${meetsTarget
-                ? `<span class="ti-icon">✓</span> Meets your ${fmt(targetNet)} goal`
-                : `<span class="ti-icon">⚠</span> Short of your ${fmt(targetNet)} goal by ${fmt(-gap)}`}
-            </div>`;
-      return `
-        <div class="plan">
-          <div class="plan-header ${r.plan.color}">
-            <h3>${r.plan.editable ? `<input class="name-edit" data-field="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />` : r.plan.name}</h3>
-            <div class="specs">${specs}</div>
-          </div>
-          <div class="plan-body">
-            <p class="net">${fmt(r.net)}</p>
-            <div class="net-label">Estimated Net (Before Tax)</div>
-            ${targetIndicator}
-            <div class="breakdown">
-              <div class="row"><span>GCI (${transactions} txns)</span><span class="val">${fmt(gci)}</span></div>
-              <div class="row"><span>Brokerage Split</span><span class="val">−${fmt(r.splitCost)}</span></div>
-              <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
-              <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
-              <div class="row"><span>Annual Dues</span><span class="val">${r.plan.editable
-                ? `−$<input class="breakdown-edit" data-field="annualDues" value="${r.plan.annualDues.toLocaleString('en-US')}" />`
-                : `−${fmt(r.dues)}`}</span></div>
-              <div class="row total"><span>Net to Agent</span><span class="val">${fmt(r.net)}</span></div>
-            </div>
-            <div class="cap-note">
-              ${r.plan.cap > 0
-                ? (r.capMet
-                    ? `<span class="cap-met">✓ Cap met</span> — GCI needed to cap: ${fmt(r.gciToCap)}`
-                    : `GCI to reach cap: ${fmt(r.gciToCap)} (${gci > 0 ? Math.round(gci / r.gciToCap * 100) : 0}% there)`)
-                : 'No cap on this plan'}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
   // ---------- Recompute everything ----------
   function recompute() {
     const personalMonthly = state.personal.reduce((s, x) => s + (Number(x.amount) || 0), 0);
@@ -1573,52 +1440,25 @@
     const personalGrossed = personalTaxRate < 1 ? personalAnnual / (1 - personalTaxRate) : 0;
     const businessGrossed = businessTaxRate < 1 ? businessAnnual / (1 - businessTaxRate) : 0;
     const grossedUp = personalGrossed + businessGrossed;
-    const commissionRate = state.commissionRate / 100;
-    const listingPct = state.listingPct;
     const avgPrice = state.avgPrice;
 
     // Render the 2 RE/MAX plan cards embedded in the funnel, and grab the
-    // best plan's required volume for the bottom tier and downstream steps.
+    // best plan's required volume for the bottom tier.
     const best = renderFunnelPlans(grossedUp, state.commissionRate, avgPrice);
-    const requiredGci = best.gci;
     const requiredVolume = best.volume;
-    const listingVolume = requiredVolume * (listingPct / 100);
-    const buyerVolume = requiredVolume * (1 - listingPct / 100);
-    const listingCount = avgPrice > 0 ? Math.ceil(listingVolume / avgPrice) : 0;
-    const buyerCount = avgPrice > 0 ? Math.ceil(buyerVolume / avgPrice) : 0;
-    const totalTransactions = listingCount + buyerCount;
+    const totalTransactions = avgPrice > 0 ? Math.ceil(requiredVolume / avgPrice) : 0;
 
-    // Step 1
+    // Expenses card
     document.getElementById('personalMonthly').textContent = fmt(personalMonthly);
     document.getElementById('personalAnnual').textContent = fmt(personalAnnual);
     document.getElementById('businessMonthly').textContent = fmt(businessMonthly);
     document.getElementById('businessAnnual').textContent = fmt(businessAnnual);
 
-    // Step 2
+    // Funnel tiers
     document.getElementById('minimumIncome').textContent = fmt(minimumIncome);
-
-    // Step 3
     document.getElementById('grossedUp').textContent = fmt(grossedUp);
-
-    // Step 4
     document.getElementById('requiredVolume').textContent = fmt(requiredVolume);
-
-    // Step 5
-    document.getElementById('listingPctLabel').textContent = listingPct;
-    document.getElementById('buyerPctLabel').textContent = 100 - listingPct;
-    document.getElementById('listingVolume').textContent = fmt(listingVolume);
-    document.getElementById('buyerVolume').textContent = fmt(buyerVolume);
-
-    // Step 6
-    document.getElementById('listingCount').textContent = listingCount;
-    document.getElementById('buyerCount').textContent = buyerCount;
-    document.getElementById('listingCountSub').textContent = `at ${fmt(avgPrice)} avg`;
-    document.getElementById('buyerCountSub').textContent = `at ${fmt(avgPrice)} avg`;
     document.getElementById('totalTransactions').textContent = totalTransactions;
-
-    // Step 7 — render the custom/current plan card at the shared volume
-    document.getElementById('payoffTarget').textContent = fmt(grossedUp);
-    renderPlans(grossedUp, best.gci, best.transactions);
   }
 
   // ---------- Initial render ----------
@@ -1706,10 +1546,6 @@
     state.commissionRate = Number(e.target.value) || 0;
     recompute();
   });
-  document.getElementById('listingPct').addEventListener('input', (e) => {
-    state.listingPct = Number(e.target.value);
-    recompute();
-  });
   document.getElementById('avgPrice').addEventListener('input', (e) => {
     formatWithCommas(e.target);
     state.avgPrice = Number(e.target.value.replace(/,/g, '')) || 0;
@@ -1722,28 +1558,6 @@
     recompute();
   });
 
-  // ---------- Step 7 editable current plan ----------
-  document.getElementById('plans').addEventListener('input', (e) => {
-    const el = e.target;
-    const field = el.dataset.field;
-    if (el.classList.contains('name-edit')) {
-      currentPlan.name = el.value;
-      return;
-    }
-    if (!el.classList.contains('spec-edit') && !el.classList.contains('breakdown-edit')) return;
-    const raw = Number(el.value.replace(/,/g, '')) || 0;
-    if (field === 'agentShare') {
-      currentPlan.splitRate = Math.max(0, Math.min(100, 100 - raw)) / 100;
-    } else if (field === 'postCapAgentShare') {
-      currentPlan.postCapRate = Math.max(0, Math.min(100, 100 - raw)) / 100;
-    } else {
-      currentPlan[field] = raw;
-    }
-    const caret = el.selectionStart;
-    recompute();
-    const fresh = document.querySelector(`#plans [data-field="${field}"]`);
-    if (fresh) { fresh.focus(); fresh.setSelectionRange(caret, caret); }
-  });
 
 </script>
 </body>
