@@ -1003,7 +1003,7 @@
     <div class="step">
       <div class="step-num">7</div>
       <h2>Compare to Your Current Plan</h2>
-      <p class="step-sub">At the same <strong id="payoffTarget">$0</strong>/yr pre-tax goal, here's the volume your current plan would require. Edit the fields to match what you have today.</p>
+      <p class="step-sub">At the same volume above, here's what your current plan would net you. Edit the fields to match what you have today — goal is <strong id="payoffTarget">$0</strong>/yr pre-tax.</p>
       <div class="plans" id="plans"></div>
     </div>
 
@@ -1154,6 +1154,10 @@
   }
 
   // ---------- Render RE/MAX plan cards INSIDE the funnel ----------
+  // Solve for each plan's required volume → use the BEST plan's volume as the
+  // shared target for the comparison. At that shared volume, each plan shows
+  // its actual net: the best plan exactly hits the goal, the other comes up
+  // short (or over, if it has a worse cap structure).
   function renderFunnelPlans(targetNet, commissionPct, avgPrice) {
     const container = document.getElementById('funnelPlans');
     if (targetNet <= 0 || commissionPct <= 0 || avgPrice <= 0) {
@@ -1162,34 +1166,47 @@
     }
     const solved = plans.map(p => ({ plan: p, ...solveRequiredGCI(p, targetNet, commissionPct, avgPrice) }));
     const best = solved.reduce((a, b) => (a.volume < b.volume ? a : b));
+    const sharedGci = best.gci;
+    const sharedTxn = best.transactions;
 
-    container.innerHTML = solved.map(s => {
-      const isWinner = s.plan === best.plan;
-      const r = s.result;
-      const splitDisplay = `${Math.round((1 - s.plan.splitRate) * 100)}/${Math.round(s.plan.splitRate * 100)}`;
-      const postCapDisplay = `${Math.round((1 - s.plan.postCapRate) * 100)}/${Math.round(s.plan.postCapRate * 100)}`;
+    const cards = plans.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
+    const winnerNet = Math.max(...cards.map(c => c.net));
+
+    container.innerHTML = cards.map(r => {
+      const isWinner = r.net === winnerNet;
+      const meetsTarget = r.net >= targetNet - 1;
+      const gap = r.net - targetNet;
+      const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
+      const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
+      const targetIndicator = `
+            <div class="target-indicator ${meetsTarget ? 'met' : 'short'}" style="margin: 10px 0 4px;">
+              ${meetsTarget
+                ? `<span class="ti-icon">✓</span> Meets your ${fmt(targetNet)} goal`
+                : `<span class="ti-icon">⚠</span> Short by ${fmt(-gap)}`}
+            </div>`;
       return `
         <div class="funnel-plan ${isWinner ? 'winner' : ''}">
           ${isWinner ? '<div class="fp-winner-badge">Best Option</div>' : ''}
           <div class="fp-header">
-            <h4 class="fp-name">${s.plan.name}</h4>
+            <h4 class="fp-name">${r.plan.name}</h4>
             <div class="fp-specs">
               <div><div class="fp-spec-label">Split</div>${splitDisplay}</div>
-              <div><div class="fp-spec-label">Plan Fee</div>$${s.plan.monthly}/mo</div>
-              <div><div class="fp-spec-label">Cap</div>${fmt(s.plan.cap)} → ${postCapDisplay}</div>
-              <div><div class="fp-spec-label">Per Txn</div>$${s.plan.perTransaction}</div>
+              <div><div class="fp-spec-label">Plan Fee</div>$${r.plan.monthly}/mo</div>
+              <div><div class="fp-spec-label">Cap</div>${fmt(r.plan.cap)} → ${postCapDisplay}</div>
+              <div><div class="fp-spec-label">Per Txn</div>$${r.plan.perTransaction}</div>
             </div>
           </div>
           <div class="fp-body">
-            <div class="fp-gci-label">Required Volume</div>
-            <div class="fp-gci">${fmt(s.volume)}</div>
+            <div class="fp-gci-label">Estimated Net (Before Tax)</div>
+            <div class="fp-gci">${fmt(r.net)}</div>
+            ${targetIndicator}
             <div class="fp-breakdown">
-              <div class="fp-row"><span>GCI (${s.transactions} txns)</span><span class="fp-val">${fmt(s.gci)}</span></div>
+              <div class="fp-row"><span>GCI (${sharedTxn} txns)</span><span class="fp-val">${fmt(sharedGci)}</span></div>
               <div class="fp-row"><span>Brokerage Split</span><span class="fp-val">−${fmt(r.splitCost)}</span></div>
               <div class="fp-row"><span>Monthly Fees (×12)</span><span class="fp-val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="fp-row"><span>Transaction Fees</span><span class="fp-val">−${fmt(r.transactionTotal)}</span></div>
               <div class="fp-row"><span>Annual Dues</span><span class="fp-val">−${fmt(r.dues)}</span></div>
-              <div class="fp-row fp-total"><span>Net (Before Tax)</span><span class="fp-val">${fmt(r.net)}</span></div>
+              <div class="fp-row fp-total"><span>Net to Agent</span><span class="fp-val">${fmt(r.net)}</span></div>
             </div>
           </div>
         </div>
@@ -1200,22 +1217,20 @@
   }
 
   // ---------- Render custom/current plan card (Step 7 below funnel) ----------
-  function renderPlans(targetNet, commissionPct, avgPrice) {
+  // Uses the shared volume from the best RE/MAX plan, so the agent sees what
+  // they would net at the SAME effort as the RE/MAX winner.
+  function renderPlans(targetNet, sharedGci, sharedTxn) {
     const container = document.getElementById('plans');
-    if (targetNet <= 0 || commissionPct <= 0 || avgPrice <= 0) {
+    if (targetNet <= 0 || sharedGci <= 0) {
       container.innerHTML = '';
       return;
     }
-    const s = { plan: currentPlan, ...solveRequiredGCI(currentPlan, targetNet, commissionPct, avgPrice) };
-    const r = s.result;
-    const gci = s.gci;
-    const transactions = s.transactions;
-    const volume = s.volume;
-    // Render array form keeps the existing event delegation working
-    const results = [{ plan: currentPlan, ...r, gci, transactions, volume }];
+    const r = compute(currentPlan, sharedGci, sharedTxn, 0);
+    const gci = sharedGci;
+    const transactions = sharedTxn;
+    const results = [{ plan: currentPlan, ...r }];
 
     container.innerHTML = results.map(r => {
-      const isWinner = false; // custom plan is the comparison, not a winner
       const meetsTarget = r.net >= targetNet - 1;
       const gap = r.net - targetNet;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
@@ -1232,6 +1247,12 @@
               <div><span class="spec-label">Cap</span><span class="spec-value">${fmt(r.plan.cap)} ${capAfter}</span></div>
               <div><span class="spec-label">Per Transaction</span><span class="spec-value">${fmt(r.plan.perTransaction)}</span></div>
       `;
+      const targetIndicator = `
+            <div class="target-indicator ${meetsTarget ? 'met' : 'short'}">
+              ${meetsTarget
+                ? `<span class="ti-icon">✓</span> Meets your ${fmt(targetNet)} goal`
+                : `<span class="ti-icon">⚠</span> Short of your ${fmt(targetNet)} goal by ${fmt(-gap)}`}
+            </div>`;
       return `
         <div class="plan">
           <div class="plan-header ${r.plan.color}">
@@ -1239,8 +1260,9 @@
             <div class="specs">${specs}</div>
           </div>
           <div class="plan-body">
-            <p class="net">${fmt(r.volume)}</p>
-            <div class="net-label">Required Volume to Hit Your Goal</div>
+            <p class="net">${fmt(r.net)}</p>
+            <div class="net-label">Estimated Net (Before Tax)</div>
+            ${targetIndicator}
             <div class="breakdown">
               <div class="row"><span>GCI (${transactions} txns)</span><span class="val">${fmt(gci)}</span></div>
               <div class="row"><span>Brokerage Split</span><span class="val">−${fmt(r.splitCost)}</span></div>
@@ -1249,7 +1271,7 @@
               <div class="row"><span>Annual Dues</span><span class="val">${r.plan.editable
                 ? `−$<input class="breakdown-edit" data-field="annualDues" value="${r.plan.annualDues.toLocaleString('en-US')}" />`
                 : `−${fmt(r.dues)}`}</span></div>
-              <div class="row total"><span>Net Before Tax</span><span class="val">${fmt(r.net)}</span></div>
+              <div class="row total"><span>Net to Agent</span><span class="val">${fmt(r.net)}</span></div>
             </div>
             <div class="cap-note">
               ${r.plan.cap > 0
@@ -1313,9 +1335,9 @@
     document.getElementById('buyerCountSub').textContent = `at ${fmt(avgPrice)} avg`;
     document.getElementById('totalTransactions').textContent = totalTransactions;
 
-    // Step 7 — render the custom/current plan card
+    // Step 7 — render the custom/current plan card at the shared volume
     document.getElementById('payoffTarget').textContent = fmt(grossedUp);
-    renderPlans(grossedUp, state.commissionRate, avgPrice);
+    renderPlans(grossedUp, best.gci, best.transactions);
 
     // Summary rail
     document.getElementById('srMinIncome').textContent = fmt(minimumIncome);
