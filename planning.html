@@ -528,6 +528,17 @@
     font-weight: 600;
   }
 
+  /* Avg sale price input below the Volume tier */
+  .avg-price-field {
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+  }
+  .avg-price-field .nf-input {
+    background: var(--card);
+    border-color: var(--text);
+  }
+
   /* Funnel-embedded plan cards (2 RE/MAX plans between Before Tax Income and Volume) */
   .funnel-plans {
     width: 100%;
@@ -1069,6 +1080,22 @@
           <div class="tier-label">Annual Sales Volume (Best RE/MAX Plan)</div>
         </div>
 
+        <!-- Flow: simple (Volume → Avg Sale Price) -->
+        <div class="funnel-flow simple">
+          <div class="flow-line"></div>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
+        </div>
+
+        <!-- Average Sale Price input -->
+        <div class="number-field avg-price-field">
+          <label>Average Sale Price</label>
+          <div class="nf-input">
+            <span class="prefix">$</span>
+            <input type="text" inputmode="numeric" id="avgPrice" value="400,000" />
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1097,14 +1124,7 @@
     <div class="step">
       <div class="step-num">6</div>
       <h2>Transaction Count</h2>
-      <p class="step-sub">At the average sale price in your market, how many deals does that work out to?</p>
-      <div class="number-field" style="max-width: 280px;">
-        <label>Average Sale Price</label>
-        <div class="nf-input">
-          <span class="prefix">$</span>
-          <input type="text" inputmode="numeric" id="avgPrice" value="400,000" />
-        </div>
-      </div>
+      <p class="step-sub">At the average sale price above, here's the transaction count you need.</p>
       <div class="derived">
         <div class="derived-card">
           <div class="dc-label">Listings Needed</div>
@@ -1141,6 +1161,7 @@
   Calculations are estimates based on plan terms. Confirm details with RE/MAX Alliance.
 </footer>
 
+<script src="agents-embed.js"></script>
 <script>
   // ---------- State ----------
   const state = {
@@ -1165,8 +1186,19 @@
     taxRate: 30,
     commissionRate: 3,
     listingPct: 50,
-    avgPrice: 400000,
+    avgPrice: medianAvgPrice(),
   };
+
+  // Median sale price across the agents in window.__AGENTS__ (volume / units).
+  // Falls back to 400,000 if the agent data isn't available.
+  function medianAvgPrice() {
+    const agents = (window.__AGENTS__ || []).filter(a => a.units > 0 && a.volume > 0);
+    if (!agents.length) return 400000;
+    const prices = agents.map(a => a.volume / a.units).sort((a, b) => a - b);
+    const mid = Math.floor(prices.length / 2);
+    const m = prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
+    return Math.round(m / 1000) * 1000; // round to nearest $1k
+  }
 
   // Current plan for Step 7 (mirrors index.html's editable plan)
   const currentPlan = {
@@ -1449,6 +1481,7 @@
   // ---------- Initial render ----------
   renderLineItems('personal');
   renderLineItems('business');
+  document.getElementById('avgPrice').value = state.avgPrice.toLocaleString('en-US');
   recompute();
 
   // ---------- Number formatting helper ----------
