@@ -263,11 +263,11 @@
   .col-total .val { font-variant-numeric: tabular-nums; }
 
   .big-number {
-    text-align: center;
-    padding: 16px 0;
+    text-align: right;
+    padding: 0;
   }
   .big-number .bn-val {
-    font-size: 42px;
+    font-size: 38px;
     font-weight: 700;
     color: var(--remax-red);
     font-variant-numeric: tabular-nums;
@@ -283,11 +283,43 @@
 
   .control-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 260px;
     gap: 24px;
     align-items: center;
   }
-  @media (max-width: 720px) { .control-row { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .control-row { grid-template-columns: 1fr; }
+    .big-number { text-align: left; }
+  }
+  .control-row .control-left {
+    min-width: 0;
+  }
+  .mantra-eq {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .mantra-eq .me-val {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .mantra-eq .me-op {
+    font-size: 18px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .mantra-eq .me-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-right: 4px;
+  }
   .slider-wrap label {
     display: block;
     font-size: 12px;
@@ -670,9 +702,18 @@
       <div class="step-num">2</div>
       <h2>Entrepreneur's Mantra</h2>
       <p class="step-sub">Your minimum acceptable income — what you need to fund your life <em>and</em> your business.</p>
-      <div class="big-number">
-        <div class="bn-val" id="minimumIncome">$0</div>
-        <div class="bn-label">Minimum Acceptable Income (Take-Home)</div>
+      <div class="control-row">
+        <div class="control-left">
+          <div class="mantra-eq">
+            <div><span class="me-label">Personal</span><span class="me-val" id="mantraPersonal">$0</span></div>
+            <span class="me-op">+</span>
+            <div><span class="me-label">Business</span><span class="me-val" id="mantraBusiness">$0</span></div>
+          </div>
+        </div>
+        <div class="big-number">
+          <div class="bn-val" id="minimumIncome">$0</div>
+          <div class="bn-label">Min Acceptable Income (Take-Home)</div>
+        </div>
       </div>
     </div>
 
@@ -682,12 +723,14 @@
       <h2>Gross Up for Taxes</h2>
       <p class="step-sub">You don't keep every dollar — back into the pre-tax income you need.</p>
       <div class="control-row">
-        <div class="slider-wrap">
-          <label>Effective Tax Rate</label>
-          <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
-          <div class="slider-value"><span id="taxRateLabel">30</span>%</div>
+        <div class="control-left">
+          <div class="slider-wrap">
+            <label>Effective Tax Rate</label>
+            <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
+            <div class="slider-value"><span id="taxRateLabel">30</span>%</div>
+          </div>
         </div>
-        <div class="big-number" style="text-align: left; padding: 0;">
+        <div class="big-number">
           <div class="bn-val" id="grossedUp">$0</div>
           <div class="bn-label">Pre-Tax Income Needed</div>
         </div>
@@ -700,14 +743,16 @@
       <h2>Convert to Sales Volume</h2>
       <p class="step-sub">The volume needed to net your goal — solved against the best RE/MAX plan, so brokerage costs are already accounted for.</p>
       <div class="control-row">
-        <div class="number-field">
-          <label>Average Commission Rate</label>
-          <div class="nf-input">
-            <input type="text" inputmode="decimal" id="commissionRate" value="3" />
-            <span class="suffix">%</span>
+        <div class="control-left">
+          <div class="number-field">
+            <label>Average Commission Rate</label>
+            <div class="nf-input">
+              <input type="text" inputmode="decimal" id="commissionRate" value="3" />
+              <span class="suffix">%</span>
+            </div>
           </div>
         </div>
-        <div class="big-number" style="text-align: left; padding: 0;">
+        <div class="big-number">
           <div class="bn-val" id="requiredVolume">$0</div>
           <div class="bn-label">Required Annual Sales Volume</div>
         </div>
@@ -1019,6 +1064,8 @@
     document.getElementById('businessTotal').textContent = fmt(businessTotal);
 
     // Step 2
+    document.getElementById('mantraPersonal').textContent = fmt(personalTotal);
+    document.getElementById('mantraBusiness').textContent = fmt(businessTotal);
     document.getElementById('minimumIncome').textContent = fmt(minimumIncome);
 
     // Step 3
