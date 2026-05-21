@@ -781,35 +781,33 @@
       <p class="step-sub">Walk down: your take-home need, grossed up for taxes, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
       <div class="funnel">
 
-        <!-- Tier 1: Mantra -->
+        <!-- Tier 1: Take Home -->
         <div class="funnel-tier t1">
-          <div class="tier-step">Step 2 · Mantra</div>
           <div class="tier-num" id="minimumIncome">$0</div>
-          <div class="tier-label">Min Acceptable Income (Take-Home)</div>
+          <div class="tier-label">Take Home</div>
           <div class="tier-sub"><span id="mantraPersonal">$0</span> personal + <span id="mantraBusiness">$0</span> business</div>
         </div>
 
         <!-- Connector: tax -->
         <div class="funnel-conn">
           <span class="conn-arrow">▼</span>
-          <span class="conn-label">Step 3 · Gross up for taxes</span>
+          <span class="conn-label">Gross up for taxes</span>
           <div class="conn-control">
             <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
             <span class="conn-value"><span id="taxRateLabel">30</span>%</span>
           </div>
         </div>
 
-        <!-- Tier 2: Grossed up -->
+        <!-- Tier 2: Before Tax Income -->
         <div class="funnel-tier t2">
-          <div class="tier-step">Step 3</div>
           <div class="tier-num" id="grossedUp">$0</div>
-          <div class="tier-label">Pre-Tax Income Needed</div>
+          <div class="tier-label">Before Tax Income</div>
         </div>
 
         <!-- Connector: commission -->
         <div class="funnel-conn">
           <span class="conn-arrow">▼</span>
-          <span class="conn-label">Step 4 · ÷ commission rate</span>
+          <span class="conn-label">÷ commission rate</span>
           <div class="conn-control">
             <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-pct-input" />
             <span class="conn-value">%</span>
@@ -818,7 +816,6 @@
 
         <!-- Tier 3: Required Volume -->
         <div class="funnel-tier t3">
-          <div class="tier-step">Step 4 · Required volume</div>
           <div class="tier-num" id="requiredVolume">$0</div>
           <div class="tier-label">Annual Sales Volume to Hit Your Goal</div>
         </div>
