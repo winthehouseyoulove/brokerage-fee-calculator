@@ -785,13 +785,11 @@
         <div class="funnel-tier t1">
           <div class="tier-num" id="minimumIncome">$0</div>
           <div class="tier-label">Take Home</div>
-          <div class="tier-sub"><span id="mantraPersonal">$0</span> personal + <span id="mantraBusiness">$0</span> business</div>
         </div>
 
         <!-- Connector: tax -->
         <div class="funnel-conn">
-          <span class="conn-arrow">▼</span>
-          <span class="conn-label">Gross up for taxes</span>
+<span class="conn-label">Gross up for taxes</span>
           <div class="conn-control">
             <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
             <span class="conn-value"><span id="taxRateLabel">30</span>%</span>
@@ -806,8 +804,7 @@
 
         <!-- Connector: commission -->
         <div class="funnel-conn">
-          <span class="conn-arrow">▼</span>
-          <span class="conn-label">÷ commission rate</span>
+<span class="conn-label">÷ commission rate</span>
           <div class="conn-control">
             <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-pct-input" />
             <span class="conn-value">%</span>
@@ -1128,8 +1125,6 @@
     document.getElementById('businessTotal').textContent = fmt(businessTotal);
 
     // Step 2
-    document.getElementById('mantraPersonal').textContent = fmt(personalTotal);
-    document.getElementById('mantraBusiness').textContent = fmt(businessTotal);
     document.getElementById('minimumIncome').textContent = fmt(minimumIncome);
 
     // Step 3
