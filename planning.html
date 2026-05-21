@@ -606,6 +606,49 @@
     cursor: pointer;
   }
 
+  /* Two-column tax rate card (personal | business) */
+  .tax-rate-card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .trc-col {
+    padding: 12px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .trc-col + .trc-col { border-left: 1px solid var(--border); }
+  .trc-col .apc-input { display: flex; align-items: baseline; gap: 4px; }
+  .trc-col .apc-input input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    padding: 0;
+    font-variant-numeric: tabular-nums;
+    height: auto;
+    width: 100%;
+    min-width: 0;
+  }
+  .trc-col .apc-suffix {
+    font-size: 20px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .trc-col .apc-slider {
+    width: calc(100% + 16px);
+    margin-top: 10px;
+  }
+  .trc-col:first-child .apc-slider { margin-left: -16px; }
+  .trc-col:last-child  .apc-slider { margin-left: 0; margin-right: -16px; }
+
   /* Funnel-embedded plan cards (2 RE/MAX plans between Before Tax Income and Volume) */
   .funnel-plans {
     width: 100%;
@@ -1105,14 +1148,36 @@
           <div class="tier-label">Take Home</div>
         </div>
 
-        <!-- Flow: tax -->
-        <div class="funnel-flow">
+        <!-- Flow: Take Home → Tax card -->
+        <div class="funnel-flow simple">
           <div class="flow-line"></div>
-          <div class="flow-content">
-            <span class="conn-label">Gross up for taxes</span>
-            <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
-            <span class="conn-value"><span id="taxRateLabel">30</span>%</span>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
+        </div>
+
+        <!-- Tax rate split: personal | business -->
+        <div class="tax-rate-card">
+          <div class="trc-col">
+            <div class="apc-label">Personal Tax Rate</div>
+            <div class="apc-input">
+              <input type="text" inputmode="decimal" id="personalTaxRate" value="20" />
+              <span class="apc-suffix">%</span>
+            </div>
+            <input type="range" id="personalTaxSlider" class="apc-slider" min="0" max="40" step="1" value="20" />
           </div>
+          <div class="trc-col">
+            <div class="apc-label">Business Tax Rate</div>
+            <div class="apc-input">
+              <input type="text" inputmode="decimal" id="businessTaxRate" value="0" />
+              <span class="apc-suffix">%</span>
+            </div>
+            <input type="range" id="businessTaxSlider" class="apc-slider" min="0" max="40" step="1" value="0" />
+          </div>
+        </div>
+
+        <!-- Flow: Tax card → Before Tax Income -->
+        <div class="funnel-flow simple">
+          <div class="flow-line"></div>
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
@@ -1258,7 +1323,8 @@
       { label: 'CE / Training', amount: 83 },
       { label: 'Professional Services (legal, tax)', amount: 125 },
     ],
-    taxRate: 30,
+    personalTaxRate: 20,
+    businessTaxRate: 0,
     commissionRate: 3,
     listingPct: 50,
     avgPrice: medianAvgPrice(),
@@ -1502,8 +1568,11 @@
     const personalAnnual = personalMonthly * 12;
     const businessAnnual = businessMonthly * 12;
     const minimumIncome = personalAnnual + businessAnnual;
-    const taxRate = state.taxRate / 100;
-    const grossedUp = taxRate < 1 ? minimumIncome / (1 - taxRate) : 0;
+    const personalTaxRate = state.personalTaxRate / 100;
+    const businessTaxRate = state.businessTaxRate / 100;
+    const personalGrossed = personalTaxRate < 1 ? personalAnnual / (1 - personalTaxRate) : 0;
+    const businessGrossed = businessTaxRate < 1 ? businessAnnual / (1 - businessTaxRate) : 0;
+    const grossedUp = personalGrossed + businessGrossed;
     const commissionRate = state.commissionRate / 100;
     const listingPct = state.listingPct;
     const avgPrice = state.avgPrice;
@@ -1529,7 +1598,6 @@
     document.getElementById('minimumIncome').textContent = fmt(minimumIncome);
 
     // Step 3
-    document.getElementById('taxRateLabel').textContent = state.taxRate;
     document.getElementById('grossedUp').textContent = fmt(grossedUp);
 
     // Step 4
@@ -1618,10 +1686,22 @@
   });
 
   // ---------- Step 3, 4, 5, 6 controls ----------
-  document.getElementById('taxRate').addEventListener('input', (e) => {
-    state.taxRate = Number(e.target.value);
-    recompute();
-  });
+  function bindTaxRate(field, inputId, sliderId) {
+    const input = document.getElementById(inputId);
+    const slider = document.getElementById(sliderId);
+    input.addEventListener('input', (e) => {
+      state[field] = Number(e.target.value) || 0;
+      slider.value = String(state[field]);
+      recompute();
+    });
+    slider.addEventListener('input', (e) => {
+      state[field] = Number(e.target.value) || 0;
+      input.value = String(state[field]);
+      recompute();
+    });
+  }
+  bindTaxRate('personalTaxRate', 'personalTaxRate', 'personalTaxSlider');
+  bindTaxRate('businessTaxRate', 'businessTaxRate', 'businessTaxSlider');
   document.getElementById('commissionRate').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
     recompute();
