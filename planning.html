@@ -322,7 +322,7 @@
     height: 14px;
     border-left: 2px dotted #b9b29a;
   }
-  .funnel-flow.simple .flow-line { height: 18px; }
+  .funnel-flow.simple .flow-line { height: 36px; }
   .flow-content {
     display: flex;
     align-items: center;
@@ -1152,7 +1152,6 @@
         <!-- Flow: Take Home → Tax card -->
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
-          <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1179,7 +1178,6 @@
         <!-- Flow: Tax card → Before Tax Income -->
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
-          <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1191,7 +1189,6 @@
 
         <!-- Flow: straight vertical from Before Tax Income → Plans -->
         <div class="funnel-flow simple">
-          <div class="flow-line"></div>
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
@@ -1216,7 +1213,6 @@
         <!-- Flow: simple (Volume → Avg Sale Price) -->
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
-          <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1232,7 +1228,6 @@
 
         <!-- Flow: simple (Avg Price → Transactions) -->
         <div class="funnel-flow simple">
-          <div class="flow-line"></div>
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
@@ -1290,7 +1285,8 @@
     const prices = agents.map(a => a.volume / a.units).sort((a, b) => a - b);
     const mid = Math.floor(prices.length / 2);
     const m = prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
-    return Math.round(m / 1000) * 1000; // round to nearest $1k
+    // Round to the slider step (5000) so the thumb lands exactly on the value
+    return Math.round(m / 5000) * 5000;
   }
 
   const plans = [
