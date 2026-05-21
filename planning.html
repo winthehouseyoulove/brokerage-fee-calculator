@@ -260,6 +260,7 @@
     margin-top: 4px;
   }
   .li-add:hover { border-color: var(--remax-blue); color: var(--remax-blue); }
+  .li-add { margin-bottom: 20px; }
   .col-total {
     margin-top: 12px;
     padding-top: 12px;
@@ -986,13 +987,6 @@
 <div class="layout">
   <div class="main-col">
 
-    <div class="agent-search">
-      <label for="agentSearch">Start with an existing agent (optional)</label>
-      <input type="text" id="agentSearch" placeholder="Search for an agent to pre-fill production (e.g. Adam Marit)" autocomplete="off" />
-      <div class="agent-results" id="agentResults"></div>
-      <div class="agent-loaded" id="agentLoaded" style="display:none;"></div>
-    </div>
-
     <!-- Step 1: Expenses -->
     <div class="step expense-step">
       <div class="step-num">1</div>
@@ -1147,7 +1141,6 @@
   Calculations are estimates based on plan terms. Confirm details with RE/MAX Alliance.
 </footer>
 
-<script src="agents-embed.js"></script>
 <script>
   // ---------- State ----------
   const state = {
@@ -1557,87 +1550,6 @@
     if (fresh) { fresh.focus(); fresh.setSelectionRange(caret, caret); }
   });
 
-  // ---------- Agent search (mirrored from index.html, adapted) ----------
-  const agents = window.__AGENTS__ || [];
-  let activeIndex = -1;
-  const searchEl = document.getElementById('agentSearch');
-  const resultsEl = document.getElementById('agentResults');
-  const loadedEl = document.getElementById('agentLoaded');
-
-  function filterAgents(q) {
-    q = q.trim().toLowerCase();
-    const sorted = [...agents].sort((a, b) => a.name.localeCompare(b.name));
-    if (!q) return sorted;
-    return sorted.filter(a => a.name.toLowerCase().includes(q));
-  }
-
-  function renderResults(matches) {
-    if (!matches.length) {
-      resultsEl.innerHTML = '<div class="agent-result"><span class="ar-empty">No matches</span></div>';
-      resultsEl.classList.add('open');
-      return;
-    }
-    resultsEl.innerHTML = matches.map((a, i) => `
-      <div class="agent-result${i === activeIndex ? ' active' : ''}" data-index="${i}">
-        <span class="ar-name">${a.name}</span>
-        <span class="ar-stats">${a.units} units · $${a.volume.toLocaleString('en-US')}</span>
-      </div>
-    `).join('');
-    resultsEl.classList.add('open');
-  }
-
-  function selectAgent(agent) {
-    // Seed production-related inputs: average sale price from their data.
-    // Leave expenses alone so Mike can walk through them with the agent.
-    if (agent.units > 0 && agent.volume > 0) {
-      const computedAvg = Math.round(agent.volume / agent.units);
-      state.avgPrice = computedAvg;
-      document.getElementById('avgPrice').value = computedAvg.toLocaleString('en-US');
-    }
-    recompute();
-    searchEl.value = agent.name;
-    resultsEl.classList.remove('open');
-    loadedEl.textContent = `Loaded ${agent.name} — 2025 MLS data ($${agent.volume.toLocaleString('en-US')} · ${agent.units} units). Avg price pre-filled.`;
-    loadedEl.style.display = 'block';
-  }
-
-  searchEl.addEventListener('input', () => {
-    activeIndex = -1;
-    loadedEl.style.display = 'none';
-    renderResults(filterAgents(searchEl.value));
-  });
-  searchEl.addEventListener('focus', () => {
-    activeIndex = -1;
-    renderResults(filterAgents(searchEl.value));
-  });
-  searchEl.addEventListener('keydown', (e) => {
-    const matches = filterAgents(searchEl.value);
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeIndex = Math.min(activeIndex + 1, matches.length - 1);
-      renderResults(matches);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeIndex = Math.max(activeIndex - 1, 0);
-      renderResults(matches);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const pick = matches[activeIndex >= 0 ? activeIndex : 0];
-      if (pick) selectAgent(pick);
-    } else if (e.key === 'Escape') {
-      resultsEl.classList.remove('open');
-    }
-  });
-  resultsEl.addEventListener('click', (e) => {
-    const item = e.target.closest('.agent-result');
-    if (!item || !item.dataset.index) return;
-    const matches = filterAgents(searchEl.value);
-    const pick = matches[Number(item.dataset.index)];
-    if (pick) selectAgent(pick);
-  });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.agent-search')) resultsEl.classList.remove('open');
-  });
 </script>
 </body>
 </html>
