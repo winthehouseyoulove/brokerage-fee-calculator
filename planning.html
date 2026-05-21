@@ -65,16 +65,9 @@
   }
 
   .layout {
-    max-width: 1280px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 24px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 280px;
-    gap: 24px;
-  }
-  @media (max-width: 960px) {
-    .layout { grid-template-columns: 1fr; }
-    .summary-rail { position: static !important; }
   }
 
   .agent-search {
@@ -282,12 +275,6 @@
   }
 
   /* Pyramid funnel for Steps 2-4 */
-  .funnel-step {
-    background: transparent;
-    box-shadow: none;
-    border-radius: 0;
-    padding: 8px 0 24px;
-  }
   .funnel-step h2 { margin-bottom: 4px; }
   .funnel {
     display: flex;
@@ -1015,30 +1002,6 @@
 
   </div>
 
-  <aside class="summary-rail">
-    <h3>Running Numbers</h3>
-    <div class="sr-row">
-      <div class="sr-label">Min Income Needed</div>
-      <div class="sr-val" id="srMinIncome">$0</div>
-    </div>
-    <div class="sr-row">
-      <div class="sr-label">Pre-Tax Income</div>
-      <div class="sr-val" id="srGrossed">$0</div>
-    </div>
-    <div class="sr-divider"></div>
-    <div class="sr-row">
-      <div class="sr-label">Required Volume</div>
-      <div class="sr-val accent" id="srVolume">$0</div>
-    </div>
-    <div class="sr-row">
-      <div class="sr-label">Transactions / Yr</div>
-      <div class="sr-val accent" id="srTransactions">0</div>
-    </div>
-    <div class="sr-row">
-      <div class="sr-label">Listings · Buyers</div>
-      <div class="sr-val" id="srMix">0 · 0</div>
-    </div>
-  </aside>
 </div>
 
 <footer>
@@ -1344,13 +1307,6 @@
     // Step 7 — render the custom/current plan card at the shared volume
     document.getElementById('payoffTarget').textContent = fmt(grossedUp);
     renderPlans(grossedUp, best.gci, best.transactions);
-
-    // Summary rail
-    document.getElementById('srMinIncome').textContent = fmt(minimumIncome);
-    document.getElementById('srGrossed').textContent = fmt(grossedUp);
-    document.getElementById('srVolume').textContent = fmt(requiredVolume);
-    document.getElementById('srTransactions').textContent = totalTransactions;
-    document.getElementById('srMix').textContent = `${listingCount} · ${buyerCount}`;
   }
 
   // ---------- Initial render ----------
