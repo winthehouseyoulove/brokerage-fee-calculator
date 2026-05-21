@@ -281,7 +281,53 @@
     flex-direction: column;
     align-items: center;
     gap: 0;
-    margin-top: 20px;
+    margin-top: 24px;
+  }
+
+  /* Connector flow: dotted line → optional label/control → dotted line → arrow */
+  .funnel-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .flow-line {
+    width: 0;
+    height: 28px;
+    border-left: 2px dotted #b9b29a;
+  }
+  .funnel-flow.simple .flow-line { height: 56px; }
+  .funnel-flow.simple .flow-line:first-child { height: 36px; }
+  .funnel-flow.simple .flow-line:last-of-type { height: 36px; }
+  .flow-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 10px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .flow-arrow {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid #b9b29a;
+    margin-top: -2px;
+  }
+  .flow-content input[type="range"] {
+    flex: 0 0 180px;
+    accent-color: var(--remax-red);
+  }
+  .flow-content .conn-value {
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: right;
   }
   .funnel-tier {
     border-radius: 12px;
@@ -413,7 +459,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin: 14px 0 4px;
+    margin: 0;
   }
   @media (max-width: 600px) { .funnel-plans { grid-template-columns: 1fr; } }
   .funnel-plan {
@@ -907,13 +953,16 @@
           <div class="tier-label">Take Home</div>
         </div>
 
-        <!-- Connector: tax -->
-        <div class="funnel-conn">
-<span class="conn-label">Gross up for taxes</span>
-          <div class="conn-control">
+        <!-- Flow: tax -->
+        <div class="funnel-flow">
+          <div class="flow-line"></div>
+          <div class="flow-content">
+            <span class="conn-label">Gross up for taxes</span>
             <input type="range" id="taxRate" min="20" max="40" step="1" value="30" />
             <span class="conn-value"><span id="taxRateLabel">30</span>%</span>
           </div>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
         </div>
 
         <!-- Tier 2: Before Tax Income -->
@@ -922,12 +971,24 @@
           <div class="tier-label">Before Tax Income</div>
         </div>
 
+        <!-- Flow: simple (Tier 2 → Plans) -->
+        <div class="funnel-flow simple">
+          <div class="flow-line"></div>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
+        </div>
+
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
 
-        <!-- Connector: commission -->
-        <div class="funnel-conn">
-          <span class="conn-sentence">Divided by commission rate of <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-inline-input" />%</span>
+        <!-- Flow: commission -->
+        <div class="funnel-flow">
+          <div class="flow-line"></div>
+          <div class="flow-content">
+            <span class="conn-sentence">Divided by commission rate of <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-inline-input" />%</span>
+          </div>
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
         </div>
 
         <!-- Tier 3: Required Volume (best plan) -->
