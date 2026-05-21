@@ -293,12 +293,10 @@
   }
   .flow-line {
     width: 0;
-    height: 28px;
+    height: 14px;
     border-left: 2px dotted #b9b29a;
   }
-  .funnel-flow.simple .flow-line { height: 56px; }
-  .funnel-flow.simple .flow-line:first-child { height: 36px; }
-  .funnel-flow.simple .flow-line:last-of-type { height: 36px; }
+  .funnel-flow.simple .flow-line { height: 18px; }
   .flow-content {
     display: flex;
     align-items: center;
@@ -306,7 +304,7 @@
     font-size: 13px;
     font-weight: 600;
     color: var(--text);
-    padding: 10px 0;
+    padding: 6px 0;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -981,12 +979,10 @@
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
 
-        <!-- Flow: commission -->
-        <div class="funnel-flow">
+        <!-- Flow: commission (input hidden, defaults to 3%) -->
+        <div class="funnel-flow simple">
           <div class="flow-line"></div>
-          <div class="flow-content">
-            <span class="conn-sentence">Divided by commission rate of <input type="text" inputmode="decimal" id="commissionRate" value="3" class="conn-inline-input" />%</span>
-          </div>
+          <input type="text" inputmode="decimal" id="commissionRate" value="3" style="display:none" />
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
