@@ -463,6 +463,65 @@
     width: 100%;
     transition: transform 0.15s;
   }
+  .funnel-tier { position: relative; }
+  .tier-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50% !important;
+    background: rgba(247,245,238,0.18);
+    color: var(--bg);
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Montserrat', sans-serif;
+    margin-left: 8px;
+    cursor: help;
+    position: relative;
+    z-index: 10;
+    vertical-align: middle;
+    transition: background 0.15s;
+    line-height: 1;
+  }
+  .tier-info:hover, .tier-info:focus { background: rgba(247,245,238,0.32); outline: none; }
+  .tier-tooltip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -100%) translateY(-4px);
+    background-color: #000e35;
+    color: var(--bg);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    visibility: hidden;
+    transition: transform 0.15s;
+    z-index: 50;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    line-height: 1.5;
+  }
+  .tier-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #000e35;
+  }
+  .funnel-tier.show-tooltip .tier-tooltip {
+    visibility: visible;
+    transform: translate(-50%, -100%) translateY(0);
+  }
+  .tier-tooltip .tt-formula { display: block; font-size: 12px; color: var(--bg); }
+  .tier-tooltip .tt-result { display: block; font-weight: 700; font-size: 14px; }
   .funnel-tier.t1 { background: var(--remax-blue); max-width: 360px; }
   .funnel-tier.t2 { background: var(--remax-blue); max-width: 500px; }
   .funnel-tier.t3 { background: var(--remax-red); max-width: 720px; }
@@ -480,6 +539,8 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
+    position: relative;
+    z-index: 0;
   }
   .funnel-tier.t3 .tier-num { font-size: 40px; }
   .funnel-tier .tier-label {
@@ -670,7 +731,45 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    position: relative;
   }
+  .tax-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--remax-blue-dark);
+    color: var(--bg);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    visibility: hidden;
+    transition: transform 0.15s;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    line-height: 1.5;
+  }
+  .tax-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--remax-blue-dark);
+  }
+  .tax-tooltip.show {
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
+  .tax-tooltip .tt-formula { font-size: 11px; color: var(--bg); }
+  .tax-tooltip .tt-result { font-weight: 700; }
   .trc-col + .trc-col { border-left: 1px solid var(--border); }
   .trc-col .apc-input { display: flex; align-items: baseline; gap: 4px; }
   .trc-col .apc-input input {
@@ -752,7 +851,37 @@
     opacity: 0.7;
     font-size: 9px;
   }
-  .funnel-plan .fp-body { padding: 14px; }
+  .funnel-plan { display: flex; flex-direction: column; }
+  .funnel-plan .fp-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 14px;
+  }
+  .funnel-plan .fp-net {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    text-align: right;
+  }
+  .funnel-plan .fp-net-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .funnel-plan .fp-net-val {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+    margin-top: 4px;
+  }
+  .funnel-plan:not(.winner) .fp-net-val { color: #232323; }
+  .funnel-plan.winner .fp-net-val { color: var(--win); }
   .funnel-plan .fp-gci-label {
     font-size: 11px;
     text-transform: uppercase;
@@ -1212,6 +1341,7 @@
         <!-- Tax rate split: personal | business -->
         <div class="tax-rate-card">
           <div class="trc-col">
+            <div class="tax-tooltip" id="personalTaxTooltip"></div>
             <div class="apc-label">Personal Tax Rate</div>
             <div class="apc-input">
               <input type="text" inputmode="decimal" id="personalTaxRate" value="20" />
@@ -1220,6 +1350,7 @@
             <input type="range" id="personalTaxSlider" class="apc-slider" min="0" max="40" step="1" value="20" />
           </div>
           <div class="trc-col">
+            <div class="tax-tooltip" id="businessTaxTooltip"></div>
             <div class="apc-label">Business Tax Rate</div>
             <div class="apc-input">
               <input type="text" inputmode="decimal" id="businessTaxRate" value="0" />
@@ -1238,8 +1369,7 @@
         <!-- Tier 2: Before Tax Income -->
         <div class="funnel-tier t2">
           <div class="tier-num" id="grossedUp">$0</div>
-          <div class="tier-label">Before Tax Income</div>
-          <div class="tier-sub"><span id="personalGrossed">$0</span> personal &nbsp;+&nbsp; <span id="businessGrossed">$0</span> business</div>
+          <div class="tier-label">Before Tax Income Needed</div>
         </div>
 
         <!-- Flow: straight vertical from Before Tax Income → Plans -->
@@ -1260,8 +1390,9 @@
 
         <!-- Tier 3: Required Volume (best plan) -->
         <div class="funnel-tier t3">
+          <div class="tier-tooltip" id="volumeTooltip"></div>
           <div class="tier-num" id="requiredVolume">$0</div>
-          <div class="tier-label">Annual Sales Volume</div>
+          <div class="tier-label">Annual Sales Volume<span class="tier-info" id="volumeInfo" tabindex="0">?</span></div>
         </div>
 
         <!-- Flow: simple (Volume → Avg Sale Price) -->
@@ -1290,6 +1421,7 @@
         <div class="funnel-tier t4">
           <div class="tier-num" id="totalTransactions">0</div>
           <div class="tier-label">Total Transactions / Year</div>
+          <div class="tier-sub"><span id="monthlyTransactions">0</span> per month</div>
         </div>
 
       </div>
@@ -1358,6 +1490,7 @@
 
   const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
   const fmtNum = (n) => Math.round(n).toLocaleString('en-US');
+  const fmtCents = (n) => '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // Update an element's textContent and trigger a brief pulse only if the
   // value changed (so the initial render doesn't pulse on every cell).
@@ -1405,28 +1538,24 @@
     `).join('');
   }
 
-  // ---------- Solve for required GCI to hit a target net ----------
-  function solveRequiredGCI(plan, targetNet, commissionPct, avgPrice) {
-    // Binary search GCI such that net(plan, GCI, transactions) === targetNet,
-    // where transactions itself depends on GCI via avg price.
+  // ---------- Solve for the min whole-number transactions to hit a target net ----------
+  // Since you can't do a partial transaction, we round UP to the next whole deal.
+  // The actual GCI/Volume are therefore derived from that integer count, which
+  // means the agent typically EXCEEDS the target net (by the value of one partial deal).
+  function solveRequiredTransactions(plan, targetNet, commissionPct, avgPrice) {
     const commRate = commissionPct / 100;
     if (targetNet <= 0 || commRate <= 0 || avgPrice <= 0) {
       return { gci: 0, volume: 0, transactions: 0, result: null, feasible: false };
     }
-    let lo = 0, hi = Math.max(targetNet * 100, 10_000_000);
-    let last = null, txn = 0, gci = 0;
-    for (let i = 0; i < 80; i++) {
-      gci = (lo + hi) / 2;
-      const volume = gci / commRate;
-      txn = Math.max(1, Math.ceil(volume / avgPrice));
-      last = compute(plan, gci, txn, 0);
-      if (last.net < targetNet) lo = gci;
-      else hi = gci;
+    for (let txn = 1; txn <= 10000; txn++) {
+      const volume = txn * avgPrice;
+      const gci = volume * commRate;
+      const result = compute(plan, gci, txn, 0);
+      if (result.net >= targetNet) {
+        return { gci, volume, transactions: txn, result, feasible: true };
+      }
     }
-    const volume = gci / commRate;
-    txn = Math.max(1, Math.ceil(volume / avgPrice));
-    last = compute(plan, gci, txn, 0);
-    return { gci, volume, transactions: txn, result: last, feasible: last.net >= targetNet - 1 };
+    return { gci: 0, volume: 0, transactions: 0, result: null, feasible: false };
   }
 
   // ---------- Render RE/MAX plan cards INSIDE the funnel ----------
@@ -1440,10 +1569,11 @@
       container.innerHTML = '';
       return { volume: 0, gci: 0, transactions: 0 };
     }
-    const solved = plans.map(p => ({ plan: p, ...solveRequiredGCI(p, targetNet, commissionPct, avgPrice) }));
-    const best = solved.reduce((a, b) => (a.volume < b.volume ? a : b));
-    const sharedGci = best.gci;
+    const solved = plans.map(p => ({ plan: p, ...solveRequiredTransactions(p, targetNet, commissionPct, avgPrice) }));
+    const best = solved.reduce((a, b) => (a.transactions < b.transactions ? a : b));
     const sharedTxn = best.transactions;
+    const sharedVolume = sharedTxn * avgPrice;
+    const sharedGci = sharedVolume * (commissionPct / 100);
 
     const cards = plans.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
     const winnerNet = Math.max(...cards.map(c => c.net));
@@ -1465,22 +1595,23 @@
             </div>
           </div>
           <div class="fp-body">
-            <div class="fp-gci-label">Estimated Net (Before Tax)</div>
-            <div class="fp-gci">${fmt(r.net)}</div>
-            <div class="fp-breakdown">
+            <div class="fp-breakdown fp-breakdown-top">
               <div class="fp-row"><span>GCI (${sharedTxn} txns)</span><span class="fp-val">${fmt(sharedGci)}</span></div>
               <div class="fp-row"><span>Brokerage Split</span><span class="fp-val">−${fmt(r.splitCost)}</span></div>
               <div class="fp-row"><span>Monthly Fees (×12)</span><span class="fp-val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="fp-row"><span>Transaction Fees</span><span class="fp-val">−${fmt(r.transactionTotal)}</span></div>
               <div class="fp-row"><span>Annual Dues</span><span class="fp-val">−${fmt(r.dues)}</span></div>
-              <div class="fp-row fp-total"><span>Net to Agent</span><span class="fp-val">${fmt(r.net)}</span></div>
+            </div>
+            <div class="fp-net">
+              <div class="fp-net-val">${fmt(r.net)}</div>
+              <div class="fp-net-label">Net to Agent</div>
             </div>
           </div>
         </div>
       `;
     }).join('');
 
-    return { volume: best.volume, gci: best.gci, transactions: best.transactions };
+    return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn };
   }
 
   // ---------- Recompute everything ----------
@@ -1501,7 +1632,7 @@
     // best plan's required volume for the bottom tier.
     const best = renderFunnelPlans(grossedUp, state.commissionRate, avgPrice);
     const requiredVolume = best.volume;
-    const totalTransactions = avgPrice > 0 ? Math.ceil(requiredVolume / avgPrice) : 0;
+    const totalTransactions = best.transactions;
 
     // Expenses card
     document.getElementById('personalMonthly').textContent = fmt(personalMonthly);
@@ -1512,10 +1643,18 @@
     // Funnel tiers — update with a brief pulse if the value actually changed
     setAndPulse('minimumIncome', fmt(minimumIncome));
     setAndPulse('grossedUp', fmt(grossedUp));
-    document.getElementById('personalGrossed').textContent = fmt(personalGrossed);
-    document.getElementById('businessGrossed').textContent = fmt(businessGrossed);
     setAndPulse('requiredVolume', fmt(requiredVolume));
+    const volTooltip = document.getElementById('volumeTooltip');
+    if (volTooltip) {
+      volTooltip.innerHTML = `
+        <span class="tt-formula">${fmt(best.gci)} GCI ÷ ${state.commissionRate}% commission</span>
+        <span class="tt-result">= ${fmt(requiredVolume)} volume</span>
+      `;
+    }
     setAndPulse('totalTransactions', String(totalTransactions));
+    const monthly = totalTransactions / 12;
+    const monthlyDisplay = monthly >= 10 ? monthly.toFixed(0) : monthly.toFixed(1);
+    setAndPulse('monthlyTransactions', monthlyDisplay);
   }
 
   // ---------- Initial render ----------
@@ -1590,22 +1729,72 @@
   });
 
   // ---------- Step 3, 4, 5, 6 controls ----------
-  function bindTaxRate(field, inputId, sliderId) {
+  function bindTaxRate(field, inputId, sliderId, tooltipId, side) {
     const input = document.getElementById(inputId);
     const slider = document.getElementById(sliderId);
+    const tooltip = document.getElementById(tooltipId);
+    let hideTimer = null;
+    function renderTooltip() {
+      const rate = state[field];
+      const annual = side === 'personal'
+        ? state.personal.reduce((s, x) => s + (Number(x.amount) || 0), 0) * 12
+        : state.business.reduce((s, x) => s + (Number(x.amount) || 0), 0) * 12;
+      const grossed = rate < 100 ? annual / (1 - rate / 100) : 0;
+      tooltip.innerHTML = `
+        <div class="tt-formula">${fmt(annual)} ÷ (1 − ${rate}%)</div>
+        <div class="tt-result">= ${fmt(grossed)}</div>
+      `;
+    }
+    function showTooltip() {
+      renderTooltip();
+      tooltip.classList.add('show');
+      if (hideTimer) clearTimeout(hideTimer);
+    }
+    function scheduleHide() {
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => tooltip.classList.remove('show'), 1200);
+    }
     input.addEventListener('input', (e) => {
       state[field] = Number(e.target.value) || 0;
       slider.value = String(state[field]);
       recompute();
+      showTooltip();
+      scheduleHide();
     });
     slider.addEventListener('input', (e) => {
       state[field] = Number(e.target.value) || 0;
       input.value = String(state[field]);
       recompute();
+      showTooltip();
     });
+    slider.addEventListener('mousedown', showTooltip);
+    slider.addEventListener('touchstart', showTooltip, { passive: true });
+    slider.addEventListener('mouseup', scheduleHide);
+    slider.addEventListener('touchend', scheduleHide);
+    slider.addEventListener('blur', scheduleHide);
+    input.addEventListener('blur', scheduleHide);
   }
-  bindTaxRate('personalTaxRate', 'personalTaxRate', 'personalTaxSlider');
-  bindTaxRate('businessTaxRate', 'businessTaxRate', 'businessTaxSlider');
+  bindTaxRate('personalTaxRate', 'personalTaxRate', 'personalTaxSlider', 'personalTaxTooltip', 'personal');
+  bindTaxRate('businessTaxRate', 'businessTaxRate', 'businessTaxSlider', 'businessTaxTooltip', 'business');
+
+  (function bindVolumeTooltip() {
+    const info = document.getElementById('volumeInfo');
+    const tier = info && info.closest('.funnel-tier');
+    const tip = document.getElementById('volumeTooltip');
+    if (!info || !tier || !tip) return;
+    function position() {
+      const tr = tier.getBoundingClientRect();
+      const ir = info.getBoundingClientRect();
+      tip.style.left = (ir.left - tr.left + ir.width / 2) + 'px';
+      tip.style.top = (ir.top - tr.top) + 'px';
+    }
+    const show = () => { position(); tier.classList.add('show-tooltip'); };
+    const hide = () => tier.classList.remove('show-tooltip');
+    info.addEventListener('mouseenter', show);
+    info.addEventListener('mouseleave', hide);
+    info.addEventListener('focus', show);
+    info.addEventListener('blur', hide);
+  })();
   document.getElementById('commissionRate').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
     recompute();
