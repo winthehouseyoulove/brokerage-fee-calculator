@@ -1931,6 +1931,10 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return false;
       const saved = JSON.parse(raw);
+      // An untouched save is just an older copy of the example numbers, and
+      // adopting it would pin visitors to stale defaults (old fee terms, a
+      // missing expense line) forever. Let fresh defaults win until they edit.
+      if (saved.touched !== true) return false;
       // Only adopt keys we already know about, so an old or hand-edited
       // payload cannot inject anything the rest of the code does not expect.
       Object.keys(DEFAULTS).forEach(k => {
