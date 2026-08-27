@@ -456,6 +456,11 @@
     border-left: 2px dotted #b9b29a;
   }
   .funnel-flow.simple .flow-line { height: 36px; }
+  /* A labeled connector splits its dotted line so the math sits centered
+     in the middle of the arrow. Empty label (cleared state) collapses back
+     to two 18px halves, the same 36px as an unlabeled connector. */
+  .funnel-flow.has-op .flow-line { height: 18px; }
+  .funnel-flow.has-op .flow-op:not(:empty) { margin: 4px 0; }
   .flow-content {
     display: flex;
     align-items: center;
@@ -1705,9 +1710,10 @@
         </div>
 
         <!-- Flow: Tax card → Before Tax Income -->
-        <div class="funnel-flow simple">
+        <div class="funnel-flow simple has-op">
           <div class="flow-line"></div>
           <div class="flow-op" id="opGross"></div>
+          <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1746,9 +1752,10 @@
           <p class="trc-note">The rate you actually collect on your side, not the total written on the deal. Change it if your market is negotiating something different.</p>
         </div>
 
-        <div class="funnel-flow simple">
+        <div class="funnel-flow simple has-op">
           <div class="flow-line"></div>
           <div class="flow-op" id="opVolume"></div>
+          <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1777,9 +1784,10 @@
         </div>
 
         <!-- Flow: simple (Avg Price → Transactions) -->
-        <div class="funnel-flow simple">
+        <div class="funnel-flow simple has-op">
           <div class="flow-line"></div>
           <div class="flow-op" id="opDeals"></div>
+          <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
