@@ -967,15 +967,6 @@
   }
   .plan-summary strong { font-weight: 700; }
 
-  /* Where this agent would land among the ranked roster */
-  .dist-block {
-    width: 100%;
-    max-width: 720px;
-    background: var(--card);
-    border: 2px solid var(--border);
-    padding: 16px 18px 14px;
-    margin-top: 26px;
-  }
   .dist-head {
     font-size: 11px;
     text-transform: uppercase;
@@ -985,62 +976,6 @@
     margin-bottom: 2px;
   }
   .dist-headline { font-size: 15px; font-weight: 700; margin: 6px 0 14px; }
-  /* Rank strip. Deliberately not a histogram: the roster is a truncated top
-     list, so its shape is an artifact of the cutoff and must not be drawn. */
-  .pct-strip { position: relative; padding-top: 24px; }
-  .ps-track {
-    position: relative;
-    height: 10px;
-    background: var(--border);
-  }
-  .ps-fill {
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    background: var(--remax-red);
-  }
-  .ps-tick {
-    position: absolute;
-    top: -3px; bottom: -3px;
-    width: 2px;
-    background: var(--card);
-    transform: translateX(-50%);
-  }
-  .ps-marker {
-    position: absolute;
-    top: -7px; bottom: -7px;
-    width: 3px;
-    background: var(--remax-blue-dark);
-    transform: translateX(-50%);
-  }
-  .ps-pin {
-    position: absolute;
-    top: 0;
-    font-size: 12.5px;
-    font-weight: 700;
-    white-space: nowrap;
-    color: var(--text);
-  }
-  .ps-scale { position: relative; height: 34px; margin-top: 10px; }
-  .ps-scale span {
-    position: absolute;
-    transform: translateX(-50%);
-    text-align: center;
-    font-size: 10.5px;
-    line-height: 1.35;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .ps-scale b { display: block; font-size: 12.5px; color: var(--text); }
-  .dist-foot {
-    font-size: 11px;
-    line-height: 1.45;
-    color: var(--muted);
-    margin: 12px 0 0;
-  }
-  @media (max-width: 600px) {
-    .dist-chart { height: 72px; }
-    .dist-axis { font-size: 8px; }
-  }
 
   /* Where every dollar of GCI ends up */
   .flow-block {
@@ -1799,11 +1734,9 @@
         </div>
         <p class="funnel-note" id="surplusNote"></p>
 
-        <div class="dist-block" id="distBlock" hidden>
-          <div class="dist-head">Where that would put you</div>
-          <div class="dist-headline" id="distHeadline"></div>
-          <div class="pct-strip" id="pctStrip"></div>
-          <p class="dist-foot" id="distFoot"></p>
+        <div class="plan-summary" id="planSummary" hidden>
+          <span class="ps-kicker">The plan</span>
+          <span id="planSummaryText"></span>
         </div>
 
         <div class="flow-block" id="flowBlock" hidden>
@@ -1812,11 +1745,6 @@
           <svg class="flow-svg" id="flowSvg" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="flowDesc"></svg>
           <ul class="flow-legend" id="flowLegend" hidden></ul>
           <p class="flow-foot" id="flowDesc"></p>
-        </div>
-
-        <div class="plan-summary" id="planSummary" hidden>
-          <span class="ps-kicker">The plan</span>
-          <span id="planSummaryText"></span>
         </div>
 
       </div>
@@ -1848,13 +1776,12 @@
     }
     .line-item { break-inside: avoid; }
     .funnel-tier, .funnel-plan, .tax-rate-card, .commission-card,
-    .avg-price-card, .dist-block, .simple-panel, .plan-summary { break-inside: avoid; }
+    .avg-price-card, .flow-block, .simple-panel, .plan-summary { break-inside: avoid; }
     .demo-banner { display: none !important; }
     .plan-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .funnel-plans { break-inside: avoid; }
     /* Keep the dark tiers legible without flooding the page with ink */
     .funnel-tier { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .ps-fill, .ps-marker { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     footer { break-before: avoid; }
     a[href]::after { content: ""; }
   }
@@ -2151,59 +2078,6 @@
     return 'About ' + (txn / 52).toFixed(1) + ' a week · ' + monthly;
   }
 
-  // ---------- Where this agent would rank ----------
-  // The roster is a top list: its smallest member is a hard cutoff, not a tail.
-  // So we report rank against named percentiles and never draw its shape, which
-  // would read as the shape of the market when it is an artifact of the cutoff.
-  const ROSTER_UNITS = (window.__AGENTS__ || [])
-    .filter(a => a.units > 0).map(a => a.units).sort((a, b) => a - b);
-  const ROSTER_VOLUMES = (window.__AGENTS__ || [])
-    .filter(a => a.volume > 0).map(a => a.volume).sort((a, b) => a - b);
-  const deals = (n) => (Math.round(n * 10) / 10).toLocaleString('en-US');
-
-  function renderDistribution(requiredTxn) {
-    const block = document.getElementById('distBlock');
-    if (!block) return;
-    if (!ROSTER_UNITS.length || requiredTxn <= 0) { block.hidden = true; return; }
-    block.hidden = false;
-
-    const n = ROSTER_UNITS.length;
-    const p25 = percentile(ROSTER_UNITS, 0.25);
-    const p50 = percentile(ROSTER_UNITS, 0.50);
-    const p75 = percentile(ROSTER_UNITS, 0.75);
-    const below = ROSTER_UNITS.filter(u => u < requiredTxn).length;
-    const pct = Math.max(0, Math.min(100, Math.round(100 * below / n)));
-
-    document.getElementById('distHeadline').innerHTML =
-      'You would need <strong>' + requiredTxn + ' deals</strong> a year. '
-      + 'On this list the middle agent closed <strong>' + deals(p50) + '</strong>, '
-      + 'and the top quarter closed <strong>' + deals(p75) + ' or more</strong>.';
-
-    // Keep the pin's label on the card at both ends of the track
-    const shift = pct < 12 ? '0' : (pct > 88 ? '-100%' : '-50%');
-    document.getElementById('pctStrip').innerHTML =
-      '<span class="ps-pin" style="left:' + pct + '%;transform:translateX(' + shift + ')">'
-        + 'You: ' + requiredTxn + ' deals · ahead of ' + pct + '%</span>'
-      + '<div class="ps-track">'
-        + '<div class="ps-fill" style="width:' + pct + '%"></div>'
-        + '<i class="ps-tick" style="left:25%"></i>'
-        + '<i class="ps-tick" style="left:50%"></i>'
-        + '<i class="ps-tick" style="left:75%"></i>'
-        + '<i class="ps-marker" style="left:' + pct + '%"></i>'
-      + '</div>'
-      + '<div class="ps-scale">'
-        + '<span style="left:25%"><b>' + deals(p25) + '</b>25th</span>'
-        + '<span style="left:50%"><b>' + deals(p50) + '</b>median</span>'
-        + '<span style="left:75%"><b>' + deals(p75) + '</b>75th</span>'
-      + '</div>';
-
-    document.getElementById('distFoot').textContent =
-      'Ranked list of ' + n.toLocaleString('en-US') + ' Dayton area agents, not every licensee. '
-      + 'The smallest on it closed ' + fmt(ROSTER_VOLUMES[0]) + ', so anyone below that cutoff is '
-      + 'missing and your real standing in the market is higher than the number above. '
-      + 'The list is ranked by volume and covers the whole market, not RE/MAX Alliance alone.';
-  }
-
   // ---------- Money flow (hand-drawn Sankey) ----------
   // GCI is conserved: every dollar leaves through exactly one of the four
   // ends, so the ribbon widths add back up to the trunk.
@@ -2459,8 +2333,6 @@
         surplusNote.textContent = '';
       }
     }
-
-    renderDistribution(totalTransactions);
 
     // Money flow: GCI splits into brokerage, business costs, tax and pocket
     const brokerageCost = Math.max(0, (best.gci || 0) - (best.net || 0));
