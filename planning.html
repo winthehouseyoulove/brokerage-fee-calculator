@@ -1617,14 +1617,14 @@
     <!-- Steps 2-4: Income → Volume funnel -->
     <div class="step funnel-step">
       <h2>How Much Do You Need to Sell?</h2>
-      <p class="step-sub">Walk down: everything your year has to cover, grossed up for the tax you pay on the personal half, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
+      <p class="step-sub">Walk down: what selling has to cover once your other income is counted, grossed up for the tax on the personal half, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
       <div class="funnel">
 
         <!-- Tier 1: the year's total need (personal living + business expenses) -->
         <div class="funnel-tier t1">
           <div class="tier-num" id="minimumIncome">$0</div>
-          <div class="tier-label">What You Need to Cover</div>
-          <div class="tier-sub"><span id="tier1Personal">$0</span> personal + <span id="tier1Business">$0</span> business<span id="tier1Offset" hidden></span></div>
+          <div class="tier-label">What Real Estate Has to Cover</div>
+          <div class="tier-sub"><span id="tier1Personal">$0</span> personal<span id="tier1Offset" hidden></span> + <span id="tier1Business">$0</span> business</div>
         </div>
 
         <!-- Flow: total need → tax card -->
@@ -2263,10 +2263,14 @@
   // ---------- Recompute everything ----------
   function recompute() {
     const { personalAnnual, businessAnnual, otherAnnual } = needs();
-    const minimumIncome = personalAnnual + businessAnnual;
     // Other income is already after tax, so it comes off the personal need
     // BEFORE the gross-up. Grossing it up would overstate what is left to earn.
     const personalToEarn = Math.max(0, personalAnnual - otherAnnual);
+    // The tier heads a funnel that answers "how much must I sell", so it shows
+    // what selling has to produce. Showing gross household costs here while the
+    // line beneath mentioned other income meant the headline never moved when
+    // that income was entered.
+    const minimumIncome = personalToEarn + businessAnnual;
     const personalTaxRate = state.personalTaxRate / 100;
     const businessTaxRate = state.businessTaxRate / 100;
     const personalGrossed = personalTaxRate < 1 ? personalToEarn / (1 - personalTaxRate) : 0;
@@ -2292,12 +2296,12 @@
 
     // Funnel tiers — update with a brief pulse if the value actually changed
     setAndPulse('minimumIncome', fmt(minimumIncome));
-    document.getElementById('tier1Personal').textContent = fmt(personalAnnual);
+    document.getElementById('tier1Personal').textContent = fmt(personalToEarn);
     document.getElementById('tier1Business').textContent = fmt(businessAnnual);
     const offset = document.getElementById('tier1Offset');
     if (offset) {
       offset.hidden = otherAnnual <= 0;
-      offset.textContent = ', less ' + fmt(otherAnnual) + ' you already bring in';
+      offset.textContent = ' after ' + fmt(otherAnnual) + ' of other income';
     }
     setAndPulse('grossedUp', fmt(grossedUp));
     setAndPulse('requiredVolume', fmt(requiredVolume));
