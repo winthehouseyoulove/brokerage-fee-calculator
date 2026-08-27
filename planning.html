@@ -673,7 +673,8 @@
     color: var(--muted);
     font-weight: 600;
   }
-  .commission-card .trc-note { margin: 8px 0 14px; }
+  .commission-card .trc-note,
+  .avg-price-card .trc-note { margin: 8px 0 14px; }
   .apc-input input {
     flex: 1;
     border: none;
@@ -1455,6 +1456,7 @@
             <input type="text" inputmode="numeric" id="avgPrice" value="400,000" />
           </div>
           <input type="range" id="avgPriceSlider" class="apc-slider" min="100000" max="500000" step="5000" value="400000" />
+          <p class="trc-note" id="avgPriceNote"></p>
         </div>
 
         <!-- Flow: simple (Avg Price → Transactions) -->
@@ -1511,14 +1513,28 @@
 
   // Median sale price across the agents in window.__AGENTS__ (volume / units).
   // Falls back to 400,000 if the agent data isn't available.
+  // Each agent's own average sale price (their volume over their units), sorted.
+  // Seeds the slider and backs the reference note under it.
+  function agentAvgPrices() {
+    return (window.__AGENTS__ || [])
+      .filter(a => a.units > 0 && a.volume > 0)
+      .map(a => a.volume / a.units)
+      .sort((a, b) => a - b);
+  }
+  function percentile(sorted, p) {
+    if (!sorted.length) return 0;
+    const i = (sorted.length - 1) * p;
+    const lo = Math.floor(i), hi = Math.ceil(i);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
+  }
+  // Round to the slider step (5000) so the thumb lands exactly on the value.
+  // Declared as a function so it hoists: `state` calls medianAvgPrice() above this.
+  function toStep(n) { return Math.round(n / 5000) * 5000; }
+
   function medianAvgPrice() {
-    const agents = (window.__AGENTS__ || []).filter(a => a.units > 0 && a.volume > 0);
-    if (!agents.length) return 400000;
-    const prices = agents.map(a => a.volume / a.units).sort((a, b) => a - b);
-    const mid = Math.floor(prices.length / 2);
-    const m = prices.length % 2 ? prices[mid] : (prices[mid - 1] + prices[mid]) / 2;
-    // Round to the slider step (5000) so the thumb lands exactly on the value
-    return Math.round(m / 5000) * 5000;
+    const prices = agentAvgPrices();
+    if (!prices.length) return 400000;
+    return toStep(percentile(prices, 0.5));
   }
 
   const plans = [
@@ -1714,6 +1730,17 @@
     const min = Number(slider.min);
     const max = min + 2 * (state.avgPrice - min);
     slider.max = String(Math.max(max, state.avgPrice));
+  })();
+  (function renderAvgPriceNote() {
+    const el = document.getElementById('avgPriceNote');
+    if (!el) return;
+    const prices = agentAvgPrices();
+    // No roster loaded means no reference to give, so drop the note entirely.
+    if (!prices.length) { el.remove(); return; }
+    const money = n => '$' + toStep(n).toLocaleString('en-US');
+    el.textContent = `Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
+      + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
+      + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
   })();
   document.getElementById('avgPrice').value = state.avgPrice.toLocaleString('en-US');
   document.getElementById('avgPriceSlider').value = String(state.avgPrice);
