@@ -1008,8 +1008,28 @@
   .flow-svg .fl-val { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
   /* Narrow screens get a narrower viewBox, so type is scaled up in user units
      to survive the downscale. */
-  .flow-svg.is-narrow .fl-name { font-size: 15px; }
-  .flow-svg.is-narrow .fl-val { font-size: 14px; }
+  .flow-legend {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 12px;
+  }
+  .flow-legend li { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .flow-legend i {
+    width: 10px; height: 10px;
+    flex: none;
+    align-self: center;
+  }
+  .flow-legend b { font-size: 12px; }
+  .flow-legend span {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    width: 100%;
+    padding-left: 16px;
+  }
   .flow-foot {
     font-size: 11px;
     line-height: 1.45;
@@ -1730,6 +1750,7 @@
           <div class="dist-head">Where every dollar goes</div>
           <div class="dist-headline" id="flowHeadline"></div>
           <svg class="flow-svg" id="flowSvg" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="flowDesc"></svg>
+          <ul class="flow-legend" id="flowLegend" hidden></ul>
           <p class="flow-foot" id="flowDesc"></p>
         </div>
 
@@ -2105,11 +2126,11 @@
   // ends, so the ribbon widths add back up to the trunk.
   const FLOW_H = 300, NODE_W = 13, PAD = 3;
   const isNarrow = () => window.matchMedia('(max-width: 600px)').matches;
-  // Narrow layout trades ribbon length for label room, so the type does not
-  // shrink into nothing when the fixed viewBox is scaled to a phone.
+  // Narrow drops the in-chart labels for an HTML legend underneath: a fixed
+  // viewBox scaled to a phone shrinks SVG text into noise.
   const flowGeom = () => isNarrow()
-    ? { W: 400, X_MID: 84, X_END: 176 }
-    : { W: 720, X_MID: 196, X_END: 424 };
+    ? { W: 300, X1: 88, X2: 176, X3: 264, labels: false }
+    : { W: 720, X1: 150, X2: 300, X3: 450, labels: true };
 
   function ribbon(x1, x2, a0, a1, b0, b1) {
     const xm = (x1 + x2) / 2;
@@ -2119,82 +2140,105 @@
       + 'C' + xm + ',' + b1 + ' ' + xm + ',' + a1 + ' ' + x1 + ',' + a1 + 'Z';
   }
 
+  // Three stages, because that is the actual order money leaves:
+  //   GCI            → brokerage takes its cut, the agent keeps the rest
+  //   what is kept   → business costs come out, the rest is what tax is figured on
+  //   what is taxed  → tax comes out, the rest is the agent's
+  // Drawing business costs and tax as siblings would say they come out of the
+  // same pool at the same time, which is exactly the thing the 0% business rate
+  // is there to teach against.
   function renderFlow(gci, brokerage, business, tax, life, cushion) {
     const block = document.getElementById('flowBlock');
     if (!block) return;
-    if (!(gci > 0) || brokerage < 0) { block.hidden = true; return; }
+    const kept = gci - brokerage;
+    const taxable = kept - business;
+    if (!(gci > 0) || brokerage < 0 || taxable < 0) { block.hidden = true; return; }
     block.hidden = false;
 
-    const kept = [
-      { name: 'Business costs', value: business, fill: '#8a8578' },
-      { name: 'Tax',            value: tax,      fill: '#b9b2a1' },
-      { name: 'Your life',      value: life,     fill: 'var(--remax-red)' },
-      { name: 'Cushion',        value: cushion,  fill: '#d8734a' },
-    ].filter(e => e.value > 0.5);
+    const g = flowGeom();
+    const svg = document.getElementById('flowSvg');
+    svg.setAttribute('viewBox', '0 0 ' + g.W + ' ' + FLOW_H);
 
     const top = 20, bottom = FLOW_H - 8;
-    // Reserve room for the gaps the second stage introduces
-    const usable = bottom - top - PAD * (kept.length + 1);
+    const usable = bottom - top - PAD * 3;
     const scale = usable / gci;
-    const keptTotal = kept.reduce((sum, e) => sum + e.value, 0);
+    const h = (v) => v * scale;
 
-    const { W, X_MID, X_END } = flowGeom();
-    const X_LABEL = X_END + NODE_W + 9;
-    const svg = document.getElementById('flowSvg');
-    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + FLOW_H);
-    svg.classList.toggle('is-narrow', isNarrow());
+    // The brokerage band needs to read as distinct from the trunk it leaves.
+    // --remax-blue and --remax-blue-dark are near-identical navies, so the cut
+    // was invisible against the main flow.
+    const BLUE = '#5b7ba6', DARK = 'var(--remax-blue-dark)';
+    const GREY = '#8a8578', STONE = '#b9b2a1';
+    const RED = 'var(--remax-red)', AMBER = '#d8734a';
 
-    const trunkH = gci * scale;
-    const brokerH = brokerage * scale;
-    const keptH = keptTotal * scale;
-    const brokerY = top;
-    const keptY = top + brokerH + PAD;
+    // Column 3 takes what is taxed and splits it: the agent's money on top,
+    // tax dropping out the bottom, matching how the earlier cuts are drawn.
+    const finals = [
+      { name: 'Your life', value: life, fill: RED },
+      { name: 'Cushion', value: cushion, fill: AMBER },
+      { name: 'Tax', value: tax, fill: STONE },
+    ].filter(e => e.value > 0.5);
 
     let links = '', nodes = '', labels = '';
+    const rect = (x, y, hh, fill) => '<rect x="' + x + '" y="' + y + '" width="' + NODE_W
+      + '" height="' + hh + '" fill="' + fill + '"></rect>';
+    const link = (x1, x2, a0, a1, b0, b1, fill) =>
+      '<path class="fl-link" d="' + ribbon(x1, x2, a0, a1, b0, b1) + '" fill="' + fill + '"></path>';
+    const label = (x, cy, name, value) =>
+      '<text class="fl-name" x="' + x + '" y="' + (cy - 1) + '">' + name + '</text>'
+      + '<text class="fl-val" x="' + x + '" y="' + (cy + 12) + '">' + fmt(value)
+      + ' · ' + Math.round(100 * value / gci) + '%</text>';
 
-    // Stage one: the brokerage's cut peels off, the rest carries on
-    links += '<path class="fl-link" d="' + ribbon(NODE_W, X_MID, top, top + brokerH, brokerY, brokerY + brokerH)
-      + '" fill="var(--remax-blue)"></path>';
-    links += '<path class="fl-link" d="' + ribbon(NODE_W, X_MID, top + brokerH, top + trunkH, keptY, keptY + keptH)
-      + '" fill="var(--remax-blue-dark)"></path>';
-    nodes += '<rect x="' + X_MID + '" y="' + brokerY + '" width="' + NODE_W + '" height="' + brokerH + '" fill="var(--remax-blue)"></rect>';
-    nodes += '<rect x="' + X_MID + '" y="' + keptY + '" width="' + NODE_W + '" height="' + keptH + '" fill="var(--remax-blue-dark)"></rect>';
+    // Stage 1
+    const keptY1 = top, brokY1 = top + h(kept) + PAD;
+    links += link(NODE_W, g.X1, top, top + h(kept), keptY1, keptY1 + h(kept), DARK);
+    links += link(NODE_W, g.X1, top + h(kept), top + h(gci), brokY1, brokY1 + h(brokerage), BLUE);
+    nodes += rect(g.X1, keptY1, h(kept), DARK) + rect(g.X1, brokY1, h(brokerage), BLUE);
 
-    // Stage two: what is kept splits into costs, tax and pocket
-    let srcY = keptY, dstY = keptY;
-    kept.forEach(e => {
-      const h = e.value * scale;
-      links += '<path class="fl-link" d="'
-        + ribbon(X_MID + NODE_W, X_END, srcY, srcY + h, dstY, dstY + h)
-        + '" fill="' + e.fill + '"></path>';
-      nodes += '<rect x="' + X_END + '" y="' + dstY + '" width="' + NODE_W + '" height="' + h + '" fill="' + e.fill + '"></rect>';
-      const ty = dstY + h / 2;
-      labels += '<text class="fl-name" x="' + X_LABEL + '" y="' + (ty - 1) + '">' + e.name + '</text>'
-        + '<text class="fl-val" x="' + X_LABEL + '" y="' + (ty + 12) + '">' + fmt(e.value)
-        + ' · ' + Math.round(100 * e.value / gci) + '%</text>';
-      srcY += h; dstY += h + PAD;
+    // Stage 2
+    const taxY2 = top, bizY2 = top + h(taxable) + PAD;
+    links += link(g.X1 + NODE_W, g.X2, keptY1, keptY1 + h(taxable), taxY2, taxY2 + h(taxable), DARK);
+    links += link(g.X1 + NODE_W, g.X2, keptY1 + h(taxable), keptY1 + h(kept), bizY2, bizY2 + h(business), GREY);
+    nodes += rect(g.X2, taxY2, h(taxable), DARK) + rect(g.X2, bizY2, h(business), GREY);
+
+    // Stage 3
+    let srcY = taxY2, dstY = top;
+    finals.forEach(e => {
+      links += link(g.X2 + NODE_W, g.X3, srcY, srcY + h(e.value), dstY, dstY + h(e.value), e.fill);
+      nodes += rect(g.X3, dstY, h(e.value), e.fill);
+      if (g.labels) labels += label(g.X3 + NODE_W + 9, dstY + h(e.value) / 2, e.name, e.value);
+      srcY += h(e.value); dstY += h(e.value) + PAD;
     });
 
-    svg.innerHTML =
-      links
-      + '<rect x="0" y="' + top + '" width="' + NODE_W + '" height="' + trunkH + '" fill="var(--remax-blue-dark)"></rect>'
-      + nodes
-      // The amount is already in the headline, so the narrow layout drops it
-      // here rather than colliding with the Brokerage label.
-      + '<text class="fl-name" x="0" y="13">' + (isNarrow() ? 'GCI' : 'GCI ' + fmt(gci)) + '</text>'
-      + '<text class="fl-name" x="' + X_MID + '" y="' + (brokerY - 6) + '">Brokerage</text>'
-      + '<text class="fl-val" x="' + (X_MID + NODE_W + 8) + '" y="' + (brokerY + brokerH / 2 + 4) + '">'
-        + fmt(brokerage) + ' · ' + Math.round(100 * brokerage / gci) + '%</text>'
-      + labels;
+    if (g.labels) {
+      labels += label(g.X1 + NODE_W + 8, brokY1 + h(brokerage) / 2, 'Brokerage', brokerage);
+      labels += label(g.X2 + NODE_W + 8, bizY2 + h(business) / 2, 'Business costs', business);
+      labels += '<text class="fl-name" x="0" y="13">GCI ' + fmt(gci) + '</text>'
+        + '<text class="fl-name" x="' + g.X1 + '" y="13">You keep</text>'
+        + '<text class="fl-name" x="' + g.X2 + '" y="13">Taxed on</text>';
+    }
+
+    svg.innerHTML = links + rect(0, top, h(gci), DARK) + nodes + labels;
+
+    // Legend carries the numbers when the chart cannot
+    const legend = document.getElementById('flowLegend');
+    const items = [
+      { name: 'Brokerage', value: brokerage, fill: BLUE },
+      { name: 'Business costs', value: business, fill: GREY },
+    ].concat(finals);
+    legend.hidden = g.labels;
+    legend.innerHTML = g.labels ? '' : items.map(e =>
+      '<li><i style="background:' + e.fill + '"></i><b>' + e.name + '</b>'
+      + '<span>' + fmt(e.value) + ' · ' + Math.round(100 * e.value / gci) + '%</span></li>').join('');
 
     document.getElementById('flowHeadline').innerHTML =
       'You bring in <strong>' + fmt(gci) + '</strong> in commission. '
       + '<strong>' + fmt(life + cushion) + '</strong> of it reaches your pocket.';
     document.getElementById('flowDesc').textContent =
-      'Every dollar leaves through one of these, so the widths add back up to the '
-      + 'commission you collected. The brokerage takes its cut first. Tax applies to '
-      + 'what is left once your business costs are paid. Cushion is what the extra '
-      + 'whole deal leaves over, after tax.';
+      'Read it left to right, in the order the money actually leaves. The brokerage '
+      + 'takes its cut first, then your business costs come out of what you keep. '
+      + 'Neither one is taxed. Tax is figured on what is left after both. Cushion is '
+      + 'what the extra whole deal leaves over, after tax.';
   }
 
   // ---------- What the year has to cover ----------
