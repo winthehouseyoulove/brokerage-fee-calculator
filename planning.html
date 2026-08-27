@@ -522,7 +522,7 @@
   }
   .tier-tooltip .tt-formula { display: block; font-size: 12px; color: var(--bg); }
   .tier-tooltip .tt-result { display: block; font-weight: 700; font-size: 14px; }
-  .funnel-tier.t1 { background: var(--remax-blue); max-width: 360px; }
+  .funnel-tier.t1 { background: var(--remax-blue); max-width: 420px; }
   .funnel-tier.t2 { background: var(--remax-blue); max-width: 500px; }
   .funnel-tier.t3 { background: var(--remax-red); max-width: 720px; }
   .funnel-tier.t4 { background: var(--remax-red); max-width: 420px; }
@@ -794,6 +794,28 @@
   .trc-col .apc-slider {
     width: calc(100% + 32px);
     margin: 10px -16px 0 -16px;
+  }
+  .trc-sublabel {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    opacity: 0.75;
+    font-weight: 600;
+    margin-top: 1px;
+  }
+  .trc-locked {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .trc-note {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--muted);
+    margin: 8px 0 14px;
   }
 
   /* Funnel-embedded plan cards (2 RE/MAX plans between Before Tax Income and Volume) */
@@ -1323,16 +1345,17 @@
     <!-- Steps 2-4: Income → Volume funnel -->
     <div class="step funnel-step">
       <h2>How Much Do You Need to Sell?</h2>
-      <p class="step-sub">Walk down: your take-home need, grossed up for taxes, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
+      <p class="step-sub">Walk down: everything your year has to cover, grossed up for the tax you pay on the personal half, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
       <div class="funnel">
 
-        <!-- Tier 1: Take Home -->
+        <!-- Tier 1: the year's total need (personal living + business expenses) -->
         <div class="funnel-tier t1">
           <div class="tier-num" id="minimumIncome">$0</div>
-          <div class="tier-label">Take Home</div>
+          <div class="tier-label">What You Need to Cover</div>
+          <div class="tier-sub"><span id="tier1Personal">$0</span> personal + <span id="tier1Business">$0</span> business</div>
         </div>
 
-        <!-- Flow: Take Home → Tax card -->
+        <!-- Flow: total need → tax card -->
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
@@ -1343,20 +1366,22 @@
           <div class="trc-col">
             <div class="tax-tooltip" id="personalTaxTooltip"></div>
             <div class="apc-label">Personal Tax Rate</div>
+            <div class="trc-sublabel">Income + self-employment</div>
             <div class="apc-input">
-              <input type="text" inputmode="decimal" id="personalTaxRate" value="20" />
+              <input type="text" inputmode="decimal" id="personalTaxRate" value="27" />
               <span class="apc-suffix">%</span>
             </div>
-            <input type="range" id="personalTaxSlider" class="apc-slider" min="0" max="40" step="1" value="20" />
+            <input type="range" id="personalTaxSlider" class="apc-slider" min="0" max="40" step="1" value="27" />
+            <p class="trc-note">Use your all-in rate, not just your income bracket. Self-employment tax lands on top of it.</p>
           </div>
           <div class="trc-col">
-            <div class="tax-tooltip" id="businessTaxTooltip"></div>
             <div class="apc-label">Business Tax Rate</div>
+            <div class="trc-sublabel">Write-offs</div>
             <div class="apc-input">
-              <input type="text" inputmode="decimal" id="businessTaxRate" value="0" />
+              <span class="trc-locked">0</span>
               <span class="apc-suffix">%</span>
             </div>
-            <input type="range" id="businessTaxSlider" class="apc-slider" min="0" max="40" step="1" value="0" />
+            <p class="trc-note">Business expenses come off before tax. A dollar of expense only costs you a dollar of revenue, so there is nothing to gross up.</p>
           </div>
         </div>
 
@@ -1457,7 +1482,7 @@
       { label: 'CE / Training', amount: 83 },
       { label: 'Professional Services (legal, tax)', amount: 125 },
     ],
-    personalTaxRate: 20,
+    personalTaxRate: 27,
     businessTaxRate: 0,
     commissionRate: 3,
     avgPrice: medianAvgPrice(),
@@ -1642,6 +1667,8 @@
 
     // Funnel tiers — update with a brief pulse if the value actually changed
     setAndPulse('minimumIncome', fmt(minimumIncome));
+    document.getElementById('tier1Personal').textContent = fmt(personalAnnual);
+    document.getElementById('tier1Business').textContent = fmt(businessAnnual);
     setAndPulse('grossedUp', fmt(grossedUp));
     setAndPulse('requiredVolume', fmt(requiredVolume));
     const volTooltip = document.getElementById('volumeTooltip');
@@ -1775,7 +1802,8 @@
     input.addEventListener('blur', scheduleHide);
   }
   bindTaxRate('personalTaxRate', 'personalTaxRate', 'personalTaxSlider', 'personalTaxTooltip', 'personal');
-  bindTaxRate('businessTaxRate', 'businessTaxRate', 'businessTaxSlider', 'businessTaxTooltip', 'business');
+  // Business side is fixed at 0% on purpose: expenses are deducted before tax,
+  // so a dollar of expense needs exactly a dollar of revenue. No slider to get wrong.
 
   (function bindVolumeTooltip() {
     const info = document.getElementById('volumeInfo');
