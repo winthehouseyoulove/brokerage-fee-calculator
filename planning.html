@@ -36,13 +36,14 @@
   .funnel-tier.t2 { animation-delay: 0.20s; }
   .funnel-flow:nth-of-type(6) { animation-delay: 0.25s; }
   .funnel-plans { animation: fadeUp 0.4s ease-out 0.30s both; }
-  .commission-card { animation-delay: 0.35s; }
-  .funnel-flow:nth-of-type(9) { animation-delay: 0.40s; }
-  .funnel-tier.t3 { animation-delay: 0.45s; }
-  .funnel-flow:nth-of-type(11) { animation-delay: 0.50s; }
-  .avg-price-card { animation-delay: 0.55s; }
-  .funnel-flow:nth-of-type(13) { animation-delay: 0.60s; }
-  .funnel-tier.t4 { animation-delay: 0.65s; }
+  .funnel-flow:nth-of-type(8) { animation-delay: 0.35s; }
+  .commission-card { animation-delay: 0.40s; }
+  .funnel-flow:nth-of-type(10) { animation-delay: 0.45s; }
+  .funnel-tier.t3 { animation-delay: 0.50s; }
+  .funnel-flow:nth-of-type(12) { animation-delay: 0.55s; }
+  .avg-price-card { animation-delay: 0.60s; }
+  .funnel-flow:nth-of-type(14) { animation-delay: 0.65s; }
+  .funnel-tier.t4 { animation-delay: 0.70s; }
 
   /* Hover lift on plan cards */
   .funnel-plan { transition: transform 0.2s ease-out, border-color 0.2s, box-shadow 0.2s; }
@@ -1410,6 +1411,11 @@
 
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
+
+        <div class="funnel-flow simple">
+          <div class="flow-line"></div>
+          <div class="flow-arrow"></div>
+        </div>
 
         <!-- Commission rate: converts net-to-agent into the GCI, and GCI into volume -->
         <div class="commission-card">
