@@ -241,6 +241,60 @@
     font-size: 13px;
   }
 
+  /* Mode toggle: take-home goal vs full breakdown */
+  .mode-toggle {
+    display: inline-flex;
+    border: 2px solid var(--border);
+    background: var(--card);
+    margin-bottom: 18px;
+  }
+  .mt-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    padding: 9px 16px;
+    cursor: pointer;
+  }
+  .mt-btn + .mt-btn { border-left: 1px solid var(--border); }
+  .mt-btn:hover { color: var(--remax-blue); }
+  .mt-btn.is-on {
+    background: var(--remax-blue);
+    color: var(--bg);
+  }
+  @media (max-width: 600px) { .mode-toggle { display: flex; width: 100%; } .mt-btn { flex: 1; } }
+
+  /* A class-level `display` outranks the UA sheet's [hidden] rule, so make
+     the attribute win wherever we use it to swap panels. */
+  [hidden] { display: none !important; }
+
+  /* Simple mode: three annual figures instead of the itemised lists */
+  .simple-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 720px) { .simple-panel { grid-template-columns: 1fr; } }
+  .sp-field {
+    background: var(--card);
+    border: 2px solid var(--border);
+    padding: 12px 16px 14px;
+  }
+  .sp-field .apc-input input { width: 100%; }
+  .sp-hint {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--muted);
+    margin: 8px 0 0;
+  }
+
+  /* Other income sits below the two expense columns */
+  .income-block { margin-top: 24px; }
+  .income-block .col-total { max-width: none; }
+
   .expense-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1327,6 +1381,42 @@
     <div class="step expense-step">
       <h2>Personal &amp; Business Expenses</h2>
       <p class="step-sub">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
+      <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
+        <button type="button" class="mt-btn is-on" data-mode="detailed">Break down my expenses</button>
+        <button type="button" class="mt-btn" data-mode="simple">I know my take-home goal</button>
+      </div>
+
+      <div id="simplePanel" class="simple-panel" hidden>
+        <div class="sp-field">
+          <div class="apc-label">Goal Take-Home</div>
+          <div class="trc-sublabel">Per year, after tax</div>
+          <div class="apc-input">
+            <span class="apc-prefix">$</span>
+            <input type="text" inputmode="numeric" id="goalTakeHome" value="80,000" />
+          </div>
+          <p class="sp-hint">What you want left over for your life once tax and business costs are paid.</p>
+        </div>
+        <div class="sp-field">
+          <div class="apc-label">Business Expenses</div>
+          <div class="trc-sublabel">Per year</div>
+          <div class="apc-input">
+            <span class="apc-prefix">$</span>
+            <input type="text" inputmode="numeric" id="simpleBusiness" value="14,496" />
+          </div>
+          <p class="sp-hint">Everything you spend running the business outside the brokerage.</p>
+        </div>
+        <div class="sp-field">
+          <div class="apc-label">Other Income</div>
+          <div class="trc-sublabel">Per year, after tax</div>
+          <div class="apc-input">
+            <span class="apc-prefix">$</span>
+            <input type="text" inputmode="numeric" id="simpleOtherIncome" value="0" />
+          </div>
+          <p class="sp-hint">A spouse's paycheck, a side job, anything that already covers part of your life.</p>
+        </div>
+      </div>
+
+      <div id="detailedPanel">
       <div class="expense-cols">
         <div class="expense-col">
           <h3>Personal</h3>
@@ -1347,6 +1437,17 @@
           </div>
         </div>
       </div>
+
+      <div class="expense-col income-block">
+        <h3>Other Income (What You Keep After Tax)</h3>
+        <div id="incomeList"></div>
+        <button class="li-add" data-add="income" data-add-label="New income source">+ Add income source</button>
+        <div class="col-total">
+          <span>Other income total</span>
+          <span class="val"><span id="incomeMonthly">$0</span><span class="ct-unit">/mo</span> · <span id="incomeAnnual">$0</span><span class="ct-unit">/yr</span></span>
+        </div>
+      </div>
+      </div>
     </div>
 
     <!-- Steps 2-4: Income → Volume funnel -->
@@ -1359,7 +1460,7 @@
         <div class="funnel-tier t1">
           <div class="tier-num" id="minimumIncome">$0</div>
           <div class="tier-label">What You Need to Cover</div>
-          <div class="tier-sub"><span id="tier1Personal">$0</span> personal + <span id="tier1Business">$0</span> business</div>
+          <div class="tier-sub"><span id="tier1Personal">$0</span> personal + <span id="tier1Business">$0</span> business<span id="tier1Offset" hidden></span></div>
         </div>
 
         <!-- Flow: total need → tax card -->
@@ -1481,6 +1582,8 @@
 
 <footer>
   Calculations are estimates based on plan terms. Confirm details with RE/MAX Alliance.
+  The tax rate is a planning estimate, not tax advice. Your real rate depends on your filing
+  status, your state, and which deductions you qualify for. Confirm it with your CPA.
 </footer>
 
 <script src="agents-embed.js"></script>
@@ -1505,6 +1608,16 @@
       { label: 'CE / Training', amount: 83 },
       { label: 'Professional Services (legal, tax)', amount: 125 },
     ],
+    // After-tax money that already exists, so real estate does not have to earn it
+    income: [
+      { label: 'Household / spouse income', amount: 0 },
+      { label: 'Side job', amount: 0 },
+    ],
+    mode: 'detailed',
+    // Simple mode carries annual figures instead of the itemised monthly lists
+    goalTakeHome: 80000,
+    simpleBusiness: 14496,
+    simpleOtherIncome: 0,
     personalTaxRate: 27,
     businessTaxRate: 0,
     commissionRate: 3,
@@ -1676,16 +1789,35 @@
     return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn };
   }
 
+  // ---------- What the year has to cover ----------
+  // Single source of truth for both modes, so the funnel below never has to
+  // care which one is on.
+  const monthlyTotal = (group) => state[group].reduce((s, x) => s + (Number(x.amount) || 0), 0);
+  function needs() {
+    if (state.mode === 'simple') {
+      return {
+        personalAnnual: state.goalTakeHome,
+        businessAnnual: state.simpleBusiness,
+        otherAnnual: state.simpleOtherIncome,
+      };
+    }
+    return {
+      personalAnnual: monthlyTotal('personal') * 12,
+      businessAnnual: monthlyTotal('business') * 12,
+      otherAnnual: monthlyTotal('income') * 12,
+    };
+  }
+
   // ---------- Recompute everything ----------
   function recompute() {
-    const personalMonthly = state.personal.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    const businessMonthly = state.business.reduce((s, x) => s + (Number(x.amount) || 0), 0);
-    const personalAnnual = personalMonthly * 12;
-    const businessAnnual = businessMonthly * 12;
+    const { personalAnnual, businessAnnual, otherAnnual } = needs();
     const minimumIncome = personalAnnual + businessAnnual;
+    // Other income is already after tax, so it comes off the personal need
+    // BEFORE the gross-up. Grossing it up would overstate what is left to earn.
+    const personalToEarn = Math.max(0, personalAnnual - otherAnnual);
     const personalTaxRate = state.personalTaxRate / 100;
     const businessTaxRate = state.businessTaxRate / 100;
-    const personalGrossed = personalTaxRate < 1 ? personalAnnual / (1 - personalTaxRate) : 0;
+    const personalGrossed = personalTaxRate < 1 ? personalToEarn / (1 - personalTaxRate) : 0;
     const businessGrossed = businessTaxRate < 1 ? businessAnnual / (1 - businessTaxRate) : 0;
     const grossedUp = personalGrossed + businessGrossed;
     const avgPrice = state.avgPrice;
@@ -1696,16 +1828,25 @@
     const requiredVolume = best.volume;
     const totalTransactions = best.transactions;
 
-    // Expenses card
-    document.getElementById('personalMonthly').textContent = fmt(personalMonthly);
-    document.getElementById('personalAnnual').textContent = fmt(personalAnnual);
-    document.getElementById('businessMonthly').textContent = fmt(businessMonthly);
-    document.getElementById('businessAnnual').textContent = fmt(businessAnnual);
+    // Expenses card (detailed mode only; simple mode has no lists to total)
+    if (state.mode === 'detailed') {
+      document.getElementById('personalMonthly').textContent = fmt(monthlyTotal('personal'));
+      document.getElementById('personalAnnual').textContent = fmt(personalAnnual);
+      document.getElementById('businessMonthly').textContent = fmt(monthlyTotal('business'));
+      document.getElementById('businessAnnual').textContent = fmt(businessAnnual);
+      document.getElementById('incomeMonthly').textContent = fmt(monthlyTotal('income'));
+      document.getElementById('incomeAnnual').textContent = fmt(otherAnnual);
+    }
 
     // Funnel tiers — update with a brief pulse if the value actually changed
     setAndPulse('minimumIncome', fmt(minimumIncome));
     document.getElementById('tier1Personal').textContent = fmt(personalAnnual);
     document.getElementById('tier1Business').textContent = fmt(businessAnnual);
+    const offset = document.getElementById('tier1Offset');
+    if (offset) {
+      offset.hidden = otherAnnual <= 0;
+      offset.textContent = ', less ' + fmt(otherAnnual) + ' you already bring in';
+    }
     setAndPulse('grossedUp', fmt(grossedUp));
     setAndPulse('requiredVolume', fmt(requiredVolume));
     const volTooltip = document.getElementById('volumeTooltip');
@@ -1724,6 +1865,7 @@
   // ---------- Initial render ----------
   renderLineItems('personal');
   renderLineItems('business');
+  renderLineItems('income');
   // Center the slider on the median: set max so the default value sits in the middle.
   (function tuneAvgPriceSlider() {
     const slider = document.getElementById('avgPriceSlider');
@@ -1790,11 +1932,12 @@
   }
   bindExpenseList('personal');
   bindExpenseList('business');
+  bindExpenseList('income');
 
   document.querySelectorAll('[data-add]').forEach(btn => {
     btn.addEventListener('click', () => {
       const group = btn.dataset.add;
-      state[group].push({ label: 'New expense', amount: 0 });
+      state[group].push({ label: btn.dataset.addLabel || 'New expense', amount: 0 });
       renderLineItems(group);
       recompute();
       const list = document.getElementById(group + 'List');
@@ -1811,9 +1954,10 @@
     let hideTimer = null;
     function renderTooltip() {
       const rate = state[field];
+      const n = needs();
       const annual = side === 'personal'
-        ? state.personal.reduce((s, x) => s + (Number(x.amount) || 0), 0) * 12
-        : state.business.reduce((s, x) => s + (Number(x.amount) || 0), 0) * 12;
+        ? Math.max(0, n.personalAnnual - n.otherAnnual)
+        : n.businessAnnual;
       const grossed = rate < 100 ? annual / (1 - rate / 100) : 0;
       tooltip.innerHTML = `
         <div class="tt-formula">${fmt(annual)} ÷ (1 − ${rate}%)</div>
@@ -1871,6 +2015,46 @@
     info.addEventListener('focus', show);
     info.addEventListener('blur', hide);
   })();
+  // ---------- Mode toggle ----------
+  function applyMode() {
+    document.getElementById('simplePanel').hidden = state.mode !== 'simple';
+    document.getElementById('detailedPanel').hidden = state.mode !== 'detailed';
+    document.querySelectorAll('.mt-btn').forEach(b => {
+      b.classList.toggle('is-on', b.dataset.mode === state.mode);
+      b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
+    });
+  }
+  document.querySelectorAll('.mt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.mode = btn.dataset.mode;
+      applyMode();
+      recompute();
+    });
+  });
+  // Switching into simple mode carries the detailed totals across, so the
+  // numbers do not jump when someone flips the toggle.
+  function seedSimpleFromDetailed() {
+    state.goalTakeHome = monthlyTotal('personal') * 12;
+    state.simpleBusiness = monthlyTotal('business') * 12;
+    state.simpleOtherIncome = monthlyTotal('income') * 12;
+    [['goalTakeHome', state.goalTakeHome], ['simpleBusiness', state.simpleBusiness],
+     ['simpleOtherIncome', state.simpleOtherIncome]].forEach(([id, v]) => {
+      document.getElementById(id).value = v.toLocaleString('en-US');
+    });
+  }
+  document.querySelector('.mt-btn[data-mode="simple"]').addEventListener('click', () => {
+    seedSimpleFromDetailed();
+    recompute();
+  });
+  ['goalTakeHome', 'simpleBusiness', 'simpleOtherIncome'].forEach(id => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      formatWithCommas(e.target);
+      state[id] = Number(e.target.value.replace(/,/g, '')) || 0;
+      recompute();
+    });
+  });
+  applyMode();
+
   document.getElementById('commissionSlider').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
     document.getElementById('commissionRate').value = String(state.commissionRate);
