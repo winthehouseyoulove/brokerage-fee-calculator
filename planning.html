@@ -241,6 +241,33 @@
     font-size: 13px;
   }
 
+  /* Toolbar under the page title */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 22px;
+  }
+  .tb-btn {
+    appearance: none;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tb-btn:hover { border-color: var(--remax-blue); color: var(--remax-blue); }
+  .tb-status {
+    font-size: 11.5px;
+    color: var(--muted);
+    align-self: center;
+    margin-left: 2px;
+  }
+
   /* Mode toggle: take-home goal vs full breakdown */
   .mode-toggle {
     display: inline-flex;
@@ -1435,6 +1462,12 @@
     <a href="planning.html" class="active">Business Plan</a>
   </nav>
   <h1>Business Plan Builder</h1>
+  <div class="toolbar">
+    <button type="button" class="tb-btn" id="btnPrint">Print or save as PDF</button>
+    <button type="button" class="tb-btn" id="btnDemo">Load demo numbers</button>
+    <button type="button" class="tb-btn" id="btnClear">Clear all</button>
+    <span class="tb-status" id="saveStatus"></span>
+  </div>
   <p>RE/MAX Alliance — Build the plan, then see the numbers</p>
 </header>
 
@@ -1654,6 +1687,38 @@
 
 </div>
 
+<style>
+  @media print {
+    /* Controls do nothing on paper */
+    .toolbar, .mode-toggle, .li-add, .li-remove, .apc-slider,
+    .tier-info, .tax-tooltip, .tier-tooltip { display: none !important; }
+
+    html, body { background: #fff; }
+    body { font-size: 11pt; }
+    .step { break-inside: avoid; }
+    /* Entrance animations leave elements mid-fade on paper */
+    * { animation: none !important; opacity: 1 !important; transform: none !important; }
+
+    /* Inputs should read as printed values, not as form fields */
+    input {
+      border: none !important;
+      background: transparent !important;
+      -webkit-appearance: none;
+      appearance: none;
+      padding-left: 0 !important;
+    }
+    .line-item { break-inside: avoid; }
+    .funnel-tier, .funnel-plan, .tax-rate-card, .commission-card,
+    .avg-price-card, .dist-block, .simple-panel { break-inside: avoid; }
+    .funnel-plans { break-inside: avoid; }
+    /* Keep the dark tiers legible without flooding the page with ink */
+    .funnel-tier { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .dist-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    footer { break-before: avoid; }
+    a[href]::after { content: ""; }
+  }
+</style>
+
 <footer>
   Calculations are estimates based on plan terms. Confirm details with RE/MAX Alliance.
   The tax rate is a planning estimate, not tax advice. Your real rate depends on your filing
@@ -1697,6 +1762,41 @@
     commissionRate: 3,
     avgPrice: medianAvgPrice(),
   };
+
+  // Pristine copy for "Load demo numbers" and for clearing back to a known base
+  const DEFAULTS = JSON.parse(JSON.stringify(state));
+
+  // ---------- Persistence ----------
+  // Private windows and blocked site data throw on access, so every call is
+  // guarded. Losing the save is survivable; throwing on load is not.
+  const STORAGE_KEY = 'remax-plan-builder-v1';
+  function setSaveStatus(text) {
+    const el = document.getElementById('saveStatus');
+    if (el) el.textContent = text;
+  }
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setSaveStatus('Saved in this browser');
+    } catch (e) {
+      setSaveStatus('Could not save in this browser');
+    }
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const saved = JSON.parse(raw);
+      // Only adopt keys we already know about, so an old or hand-edited
+      // payload cannot inject anything the rest of the code does not expect.
+      Object.keys(DEFAULTS).forEach(k => {
+        if (saved[k] !== undefined && typeof saved[k] === typeof DEFAULTS[k]) state[k] = saved[k];
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
   // Median sale price across the agents in window.__AGENTS__ (volume / units).
   // Falls back to 400,000 if the agent data isn't available.
@@ -2054,20 +2154,33 @@
     }
 
     renderDistribution(requiredVolume);
+    saveState();
   }
 
   // ---------- Initial render ----------
-  renderLineItems('personal');
-  renderLineItems('business');
-  renderLineItems('income');
-  // Center the slider on the median: set max so the default value sits in the middle.
-  (function tuneAvgPriceSlider() {
+  // ---------- Push state into the DOM ----------
+  // Called on load and after clear/demo, so no control can drift from state.
+  function syncInputs() {
+    renderLineItems('personal');
+    renderLineItems('business');
+    renderLineItems('income');
+    // Center the slider on the median: set max so the value sits in the middle.
     const slider = document.getElementById('avgPriceSlider');
     const min = Number(slider.min);
-    const max = min + 2 * (state.avgPrice - min);
-    slider.max = String(Math.max(max, state.avgPrice));
-  })();
-  (function renderAvgPriceNote() {
+    slider.max = String(Math.max(min + 2 * (state.avgPrice - min), state.avgPrice));
+    slider.value = String(state.avgPrice);
+    document.getElementById('avgPrice').value = state.avgPrice.toLocaleString('en-US');
+    document.getElementById('personalTaxRate').value = String(state.personalTaxRate);
+    document.getElementById('personalTaxSlider').value = String(state.personalTaxRate);
+    document.getElementById('commissionRate').value = String(state.commissionRate);
+    document.getElementById('commissionSlider').value = String(state.commissionRate);
+    document.getElementById('goalTakeHome').value = state.goalTakeHome.toLocaleString('en-US');
+    document.getElementById('simpleBusiness').value = state.simpleBusiness.toLocaleString('en-US');
+    document.getElementById('simpleOtherIncome').value = state.simpleOtherIncome.toLocaleString('en-US');
+    applyMode();
+  }
+
+  function renderAvgPriceNote() {
     const el = document.getElementById('avgPriceNote');
     if (!el) return;
     const prices = agentAvgPrices();
@@ -2077,9 +2190,11 @@
     el.textContent = `Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
       + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
       + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
-  })();
-  document.getElementById('avgPrice').value = state.avgPrice.toLocaleString('en-US');
-  document.getElementById('avgPriceSlider').value = String(state.avgPrice);
+  }
+
+  loadState();
+  renderAvgPriceNote();
+  syncInputs();
   recompute();
 
   // ---------- Number formatting helper ----------
@@ -2248,6 +2363,31 @@
     });
   });
   applyMode();
+
+  // ---------- Toolbar ----------
+  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  document.getElementById('btnDemo').addEventListener('click', () => {
+    Object.keys(DEFAULTS).forEach(k => {
+      state[k] = JSON.parse(JSON.stringify(DEFAULTS[k]));
+    });
+    syncInputs();
+    recompute();
+  });
+  document.getElementById('btnClear').addEventListener('click', () => {
+    // Zero the money, keep the line labels so the sheet stays usable, and put
+    // the rate assumptions back to their defaults.
+    ['personal', 'business', 'income'].forEach(g => {
+      state[g] = DEFAULTS[g].map(item => ({ label: item.label, amount: 0 }));
+    });
+    state.goalTakeHome = 0;
+    state.simpleBusiness = 0;
+    state.simpleOtherIncome = 0;
+    state.personalTaxRate = DEFAULTS.personalTaxRate;
+    state.commissionRate = DEFAULTS.commissionRate;
+    state.avgPrice = DEFAULTS.avgPrice;
+    syncInputs();
+    recompute();
+  });
 
   document.getElementById('commissionSlider').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
