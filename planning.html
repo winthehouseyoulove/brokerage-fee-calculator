@@ -945,27 +945,73 @@
     margin: 0 0 18px;
   }
 
-  /* Closing one-line plan */
+  /* Closing answer card */
   .plan-summary {
     width: 100%;
     max-width: 720px;
     background: var(--remax-blue-dark);
     color: var(--bg);
-    padding: 20px 24px;
+    padding: 30px 34px 26px;
     margin-top: 26px;
-    font-size: 16px;
-    line-height: 1.6;
+    border-top: 6px solid var(--remax-red);
   }
   .plan-summary .ps-kicker {
-    font-size: 11px;
+    font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1.5px;
     opacity: 0.75;
     font-weight: 700;
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
   }
-  .plan-summary strong { font-weight: 700; }
+  .ps-hero {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 22px;
+  }
+  .ps-hero small {
+    display: block;
+    font-size: 17px;
+    font-weight: 600;
+    opacity: 0.85;
+    margin-top: 6px;
+  }
+  .ps-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    border-top: 1px solid rgba(247, 245, 238, 0.25);
+    padding-top: 18px;
+  }
+  .ps-stats b {
+    display: block;
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .ps-stats span {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.7;
+    margin-top: 4px;
+  }
+  .ps-note {
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0.8;
+    margin: 14px 0 0;
+  }
+  .ps-note:empty { display: none; }
+  @media (max-width: 600px) {
+    .plan-summary { padding: 22px 20px 20px; }
+    .ps-hero { font-size: 28px; }
+    .ps-stats { grid-template-columns: 1fr; gap: 14px; }
+    .ps-stats b { font-size: 24px; }
+  }
 
   .dist-head {
     font-size: 11px;
@@ -1736,7 +1782,13 @@
 
         <div class="plan-summary" id="planSummary" hidden>
           <span class="ps-kicker">The plan</span>
-          <span id="planSummaryText"></span>
+          <div class="ps-hero"><span id="psDeals"></span><small id="psPlanName"></small></div>
+          <div class="ps-stats">
+            <div><b id="psPace"></b><span>pace</span></div>
+            <div><b id="psVolume"></b><span>annual volume</span></div>
+            <div><b id="psTakeHome"></b><span>your year, paid for</span></div>
+          </div>
+          <p class="ps-note" id="psNote"></p>
         </div>
 
         <div class="flow-block" id="flowBlock" hidden>
@@ -2303,21 +2355,25 @@
       }
     }
 
-    // The closing sentence that assembles the whole answer
+    // The closing answer card
     const summary = document.getElementById('planSummary');
     if (isEmpty || !best.winnerName) {
       summary.hidden = true;
     } else {
       summary.hidden = false;
-      const pace = cadenceText(totalTransactions).split(' · ')[0].toLowerCase();
-      const covered = otherAnnual > 0
-        ? ', ' + fmt(Math.min(otherAnnual, personalAnnual)) + ' of it already covered by your other income'
-        : '';
-      document.getElementById('planSummaryText').innerHTML =
-        'Close <strong>' + totalTransactions + ' deals</strong> on the <strong>' + best.winnerName
-        + '</strong> — ' + pace + ', ' + fmt(requiredVolume) + ' in volume at your ' + fmt(avgPrice)
-        + ' average sale — and your <strong>' + fmt(personalAnnual)
-        + '</strong> personal year is paid for' + covered + '.';
+      document.getElementById('psDeals').textContent =
+        totalTransactions + (totalTransactions === 1 ? ' deal' : ' deals') + ' a year';
+      document.getElementById('psPlanName').textContent = 'on the ' + best.winnerName;
+      const pace = cadenceText(totalTransactions).split(' · ')[0]
+        .replace(/^About /, '').replace(/^one/, '1').replace(' weeks', ' wks').replace(' week', ' wk');
+      document.getElementById('psPace').textContent = pace;
+      document.getElementById('psVolume').textContent = fmt(requiredVolume);
+      document.getElementById('psTakeHome').textContent = fmt(personalAnnual);
+      document.getElementById('psNote').textContent =
+        'At your ' + fmt(avgPrice) + ' average sale and ' + state.commissionRate + '% commission.'
+        + (otherAnnual > 0
+          ? ' ' + fmt(Math.min(otherAnnual, personalAnnual)) + ' of your year is already covered by other income.'
+          : '');
     }
     applyBanner();
 
