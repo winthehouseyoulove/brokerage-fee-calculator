@@ -879,6 +879,70 @@
     margin: 8px 0 14px;
   }
 
+  /* One-line findings that sit under a funnel element */
+  .funnel-note {
+    width: 100%;
+    max-width: 720px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--muted);
+    text-align: center;
+    margin: 12px 0 0;
+  }
+  .funnel-note strong { color: var(--text); font-weight: 700; }
+
+  /* Where this agent would land among the ranked roster */
+  .dist-block {
+    width: 100%;
+    max-width: 720px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    padding: 16px 18px 14px;
+    margin-top: 26px;
+  }
+  .dist-head {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .dist-headline { font-size: 15px; font-weight: 700; margin: 6px 0 14px; }
+  .dist-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 96px;
+  }
+  .dist-bar {
+    flex: 1;
+    background: var(--border);
+    min-height: 2px;
+    position: relative;
+    transition: background 0.2s;
+  }
+  .dist-bar.is-you { background: var(--remax-red); }
+  .dist-axis {
+    display: flex;
+    gap: 3px;
+    margin-top: 5px;
+    font-size: 9.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .dist-axis span { flex: 1; text-align: center; }
+  .dist-foot {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--muted);
+    margin: 12px 0 0;
+  }
+  @media (max-width: 600px) {
+    .dist-chart { height: 72px; }
+    .dist-axis { font-size: 8px; }
+  }
+
   /* Funnel-embedded plan cards (2 RE/MAX plans between Before Tax Income and Volume) */
   .funnel-plans {
     width: 100%;
@@ -1513,6 +1577,7 @@
 
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
+        <p class="funnel-note" id="crossoverNote"></p>
 
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
@@ -1570,7 +1635,16 @@
         <div class="funnel-tier t4">
           <div class="tier-num" id="totalTransactions">0</div>
           <div class="tier-label">Total Transactions / Year</div>
-          <div class="tier-sub"><span id="monthlyTransactions">0</span> per month</div>
+          <div class="tier-sub" id="cadence">0 per month</div>
+        </div>
+        <p class="funnel-note" id="surplusNote"></p>
+
+        <div class="dist-block" id="distBlock" hidden>
+          <div class="dist-head">Where that would put you</div>
+          <div class="dist-headline" id="distHeadline"></div>
+          <div class="dist-chart" id="distChart"></div>
+          <div class="dist-axis" id="distAxis"></div>
+          <p class="dist-foot" id="distFoot"></p>
         </div>
 
       </div>
@@ -1786,7 +1860,101 @@
       `;
     }).join('');
 
-    return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn };
+    return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn, net: winnerNet };
+  }
+
+  // ---------- Where one plan overtakes the other ----------
+  // The cheaper cap wins at volume, the cheaper monthly fee wins below it.
+  // Agents rarely know the crossover exists, so find and state it.
+  function findCrossover(commissionPct, avgPrice) {
+    if (plans.length < 2 || commissionPct <= 0 || avgPrice <= 0) return null;
+    const winnerAt = (txn) => {
+      const gci = txn * avgPrice * (commissionPct / 100);
+      return plans.reduce((best, p) => {
+        const net = compute(p, gci, txn, 0).net;
+        return (!best || net > best.net) ? { plan: p, net } : best;
+      }, null).plan;
+    };
+    const first = winnerAt(1);
+    for (let txn = 2; txn <= 250; txn++) {
+      const w = winnerAt(txn);
+      if (w !== first) return { from: first, to: w, at: txn };
+    }
+    return null;
+  }
+
+  // ---------- Transaction cadence ----------
+  function cadenceText(txn) {
+    if (txn <= 0) return '';
+    const perMonth = txn / 12;
+    const monthly = (perMonth >= 10 ? perMonth.toFixed(0) : perMonth.toFixed(1)) + ' per month';
+    const weeks = 52 / txn;
+    if (weeks >= 1.5) return 'About one every ' + Math.round(weeks) + ' weeks · ' + monthly;
+    if (weeks >= 0.9) return 'About one a week · ' + monthly;
+    return 'About ' + (txn / 52).toFixed(1) + ' a week · ' + monthly;
+  }
+
+  // ---------- Roster volume distribution ----------
+  function volumeBins() {
+    const vols = (window.__AGENTS__ || [])
+      .filter(a => a.volume > 0).map(a => a.volume).sort((a, b) => a - b);
+    if (!vols.length) return null;
+    const M = 1000000;
+    const lo = Math.floor(vols[0] / M) * M;
+    // Cut the long tail at p90 and pool everything above into one bucket,
+    // otherwise a single $150M agent flattens every other bar to nothing.
+    const hi = Math.max(lo + M, Math.ceil(percentile(vols, 0.90) / M) * M);
+    const bins = [];
+    for (let v = lo; v < hi; v += M) bins.push({ lo: v, hi: v + M, count: 0, over: false });
+    bins.push({ lo: hi, hi: Infinity, count: 0, over: true });
+    vols.forEach(v => {
+      let i = Math.floor((v - lo) / M);
+      if (i > bins.length - 1) i = bins.length - 1;
+      if (i < 0) i = 0;
+      bins[i].count++;
+    });
+    return { vols, bins, lo, hi, step: M };
+  }
+
+  const DIST = volumeBins();
+
+  function renderDistribution(requiredVolume) {
+    const block = document.getElementById('distBlock');
+    if (!block) return;
+    if (!DIST || requiredVolume <= 0) { block.hidden = true; return; }
+    block.hidden = false;
+    const { vols, bins, lo, hi, step } = DIST;
+    const below = vols.filter(v => v < requiredVolume).length;
+    const pct = Math.round(100 * below / vols.length);
+    const n = vols.length.toLocaleString('en-US');
+
+    const headline = document.getElementById('distHeadline');
+    if (requiredVolume <= vols[0]) {
+      headline.textContent = fmt(requiredVolume) + ' a year sits below every agent on this list.';
+    } else {
+      headline.textContent = fmt(requiredVolume) + ' a year would put you above '
+        + pct + '% of the ' + n + ' agents on this list.';
+    }
+
+    let yourBin = Math.floor((requiredVolume - lo) / step);
+    if (yourBin > bins.length - 1) yourBin = bins.length - 1;
+    const max = Math.max.apply(null, bins.map(b => b.count)) || 1;
+    document.getElementById('distChart').innerHTML = bins.map((b, i) => {
+      const label = b.over
+        ? (hi / 1000000) + 'M or more: ' + b.count + ' agents'
+        : (b.lo / 1000000) + 'M to ' + (b.hi / 1000000) + 'M: ' + b.count + ' agents';
+      const mine = (i === yourBin && requiredVolume >= lo);
+      return '<div class="dist-bar' + (mine ? ' is-you' : '') + '" style="height:'
+        + Math.max(2, Math.round(100 * b.count / max)) + '%" title="' + label + '"></div>';
+    }).join('');
+    document.getElementById('distAxis').innerHTML = bins.map((b, i) => {
+      if (b.over) return '<span>' + (hi / 1000000) + 'M+</span>';
+      return '<span>' + (i % 2 === 0 ? (b.lo / 1000000) + 'M' : '') + '</span>';
+    }).join('');
+    document.getElementById('distFoot').textContent =
+      'Dayton area roster of ' + n + ' agents. The smallest did ' + fmt(vols[0])
+      + ', so this ranks you among producing agents rather than among everyone holding a license. '
+      + 'It is the whole market, not RE/MAX Alliance alone.';
   }
 
   // ---------- What the year has to cover ----------
@@ -1857,9 +2025,35 @@
       `;
     }
     setAndPulse('totalTransactions', String(totalTransactions));
-    const monthly = totalTransactions / 12;
-    const monthlyDisplay = monthly >= 10 ? monthly.toFixed(0) : monthly.toFixed(1);
-    setAndPulse('monthlyTransactions', monthlyDisplay);
+    setAndPulse('cadence', cadenceText(totalTransactions));
+
+    // Which plan wins, and from where
+    const cross = findCrossover(state.commissionRate, avgPrice);
+    const crossNote = document.getElementById('crossoverNote');
+    if (crossNote) {
+      if (!cross) {
+        crossNote.textContent = '';
+      } else {
+        crossNote.innerHTML = '<strong>' + cross.from.name + '</strong> nets more up to '
+          + (cross.at - 1) + ' transactions a year. From <strong>' + cross.at
+          + '</strong> on, <strong>' + cross.to.name + '</strong> pulls ahead and the gap keeps widening.';
+      }
+    }
+
+    // What the rounding up to a whole deal actually buys
+    const surplusNote = document.getElementById('surplusNote');
+    if (surplusNote) {
+      const surplus = (best.net || 0) - grossedUp;
+      if (totalTransactions > 0 && surplus >= 0) {
+        surplusNote.innerHTML = 'You cannot do part of a deal, so <strong>' + totalTransactions
+          + '</strong> is the first whole number that clears the goal. It leaves <strong>'
+          + fmt(surplus) + '</strong> over.';
+      } else {
+        surplusNote.textContent = '';
+      }
+    }
+
+    renderDistribution(requiredVolume);
   }
 
   // ---------- Initial render ----------
