@@ -24,6 +24,7 @@
   .funnel-tier,
   .tax-rate-card,
   .avg-price-card,
+  .commission-card,
   .funnel-plans,
   .funnel-flow {
     animation: fadeUp 0.4s ease-out both;
@@ -35,12 +36,13 @@
   .funnel-tier.t2 { animation-delay: 0.20s; }
   .funnel-flow:nth-of-type(6) { animation-delay: 0.25s; }
   .funnel-plans { animation: fadeUp 0.4s ease-out 0.30s both; }
-  .funnel-flow:nth-of-type(8) { animation-delay: 0.35s; }
-  .funnel-tier.t3 { animation-delay: 0.40s; }
-  .funnel-flow:nth-of-type(9) { animation-delay: 0.45s; }
-  .avg-price-card { animation-delay: 0.50s; }
-  .funnel-flow:nth-of-type(11) { animation-delay: 0.55s; }
-  .funnel-tier.t4 { animation-delay: 0.60s; }
+  .commission-card { animation-delay: 0.35s; }
+  .funnel-flow:nth-of-type(9) { animation-delay: 0.40s; }
+  .funnel-tier.t3 { animation-delay: 0.45s; }
+  .funnel-flow:nth-of-type(11) { animation-delay: 0.50s; }
+  .avg-price-card { animation-delay: 0.55s; }
+  .funnel-flow:nth-of-type(13) { animation-delay: 0.60s; }
+  .funnel-tier.t4 { animation-delay: 0.65s; }
 
   /* Hover lift on plan cards */
   .funnel-plan { transition: transform 0.2s ease-out, border-color 0.2s, box-shadow 0.2s; }
@@ -640,7 +642,8 @@
     font-weight: 600;
   }
 
-  /* Avg sale price input below the Volume tier */
+  /* Commission rate + avg sale price share the same card shell */
+  .commission-card,
   .avg-price-card {
     width: 100%;
     max-width: 360px;
@@ -663,11 +666,13 @@
     align-items: baseline;
     gap: 4px;
   }
-  .apc-prefix {
+  .apc-prefix,
+  .apc-suffix {
     font-size: 20px;
     color: var(--muted);
     font-weight: 600;
   }
+  .commission-card .trc-note { margin: 8px 0 14px; }
   .apc-input input {
     flex: 1;
     border: none;
@@ -1406,8 +1411,18 @@
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
 
-        <!-- Flow: commission (input hidden, defaults to 3%) -->
-        <input type="text" inputmode="decimal" id="commissionRate" value="3" style="display:none" />
+        <!-- Commission rate: converts net-to-agent into the GCI, and GCI into volume -->
+        <div class="commission-card">
+          <div class="apc-label">Commission Rate</div>
+          <div class="trc-sublabel">Your side of the deal</div>
+          <div class="apc-input">
+            <input type="text" inputmode="decimal" id="commissionRate" value="3" />
+            <span class="apc-suffix">%</span>
+          </div>
+          <input type="range" id="commissionSlider" class="apc-slider" min="1" max="4" step="0.05" value="3" />
+          <p class="trc-note">The rate you actually collect on your side, not the total written on the deal. Change it if your market is negotiating something different.</p>
+        </div>
+
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
@@ -1823,8 +1838,17 @@
     info.addEventListener('focus', show);
     info.addEventListener('blur', hide);
   })();
+  document.getElementById('commissionSlider').addEventListener('input', (e) => {
+    state.commissionRate = Number(e.target.value) || 0;
+    document.getElementById('commissionRate').value = String(state.commissionRate);
+    recompute();
+  });
   document.getElementById('commissionRate').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
+    const slider = document.getElementById('commissionSlider');
+    if (state.commissionRate >= Number(slider.min) && state.commissionRate <= Number(slider.max)) {
+      slider.value = String(state.commissionRate);
+    }
     recompute();
   });
   document.getElementById('avgPrice').addEventListener('input', (e) => {
