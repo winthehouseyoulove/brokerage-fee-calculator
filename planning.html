@@ -918,6 +918,50 @@
   }
   .funnel-note strong { color: var(--text); font-weight: 700; }
 
+  /* The operation an arrow performs, so the math between tiers is readable */
+  .flow-op {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+    padding: 3px 10px;
+    max-width: 340px;
+  }
+  .flow-op:empty { display: none; }
+
+  /* Example-numbers notice, shown until the first real edit */
+  .demo-banner {
+    background: rgba(170, 17, 32, 0.06);
+    border: 1px solid rgba(170, 17, 32, 0.25);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px 14px;
+    margin: 0 0 18px;
+  }
+
+  /* Closing one-line plan */
+  .plan-summary {
+    width: 100%;
+    max-width: 720px;
+    background: var(--remax-blue-dark);
+    color: var(--bg);
+    padding: 20px 24px;
+    margin-top: 26px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .plan-summary .ps-kicker {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.75;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .plan-summary strong { font-weight: 700; }
+
   /* Where this agent would land among the ranked roster */
   .dist-block {
     width: 100%;
@@ -1543,8 +1587,9 @@
 
     <!-- Step 1: Expenses -->
     <div class="step expense-step">
-      <h2>Personal &amp; Business Expenses</h2>
-      <p class="step-sub">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
+      <h2 id="expenseHeading">Personal &amp; Business Expenses</h2>
+      <p class="step-sub" id="expenseIntro">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
+      <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own, or press Clear all and start fresh.</p>
       <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
         <button type="button" class="mt-btn is-on" data-mode="detailed">Break down my expenses</button>
         <button type="button" class="mt-btn" data-mode="simple">I know my take-home goal</button>
@@ -1620,6 +1665,8 @@
       <p class="step-sub">Walk down: what selling has to cover once your other income is counted, grossed up for the tax on the personal half, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
       <div class="funnel">
 
+        <p class="funnel-note" id="emptyNote" hidden>Enter your expenses above, or press <strong>Load demo numbers</strong>, to see what you need to sell.</p>
+
         <!-- Tier 1: the year's total need (personal living + business expenses) -->
         <div class="funnel-tier t1">
           <div class="tier-num" id="minimumIncome">$0</div>
@@ -1660,6 +1707,7 @@
         <!-- Flow: Tax card → Before Tax Income -->
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
+          <div class="flow-op" id="opGross"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1674,6 +1722,8 @@
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
+
+        <p class="funnel-note" id="solveNote" style="margin: 0 0 12px;"></p>
 
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
@@ -1698,6 +1748,7 @@
 
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
+          <div class="flow-op" id="opVolume"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1728,6 +1779,7 @@
         <!-- Flow: simple (Avg Price → Transactions) -->
         <div class="funnel-flow simple">
           <div class="flow-line"></div>
+          <div class="flow-op" id="opDeals"></div>
           <div class="flow-arrow"></div>
         </div>
 
@@ -1752,6 +1804,11 @@
           <svg class="flow-svg" id="flowSvg" viewBox="0 0 720 300" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="flowDesc"></svg>
           <ul class="flow-legend" id="flowLegend" hidden></ul>
           <p class="flow-foot" id="flowDesc"></p>
+        </div>
+
+        <div class="plan-summary" id="planSummary" hidden>
+          <span class="ps-kicker">The plan</span>
+          <span id="planSummaryText"></span>
         </div>
 
       </div>
@@ -1783,7 +1840,9 @@
     }
     .line-item { break-inside: avoid; }
     .funnel-tier, .funnel-plan, .tax-rate-card, .commission-card,
-    .avg-price-card, .dist-block, .simple-panel { break-inside: avoid; }
+    .avg-price-card, .dist-block, .simple-panel, .plan-summary { break-inside: avoid; }
+    .demo-banner { display: none !important; }
+    .plan-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .funnel-plans { break-inside: avoid; }
     /* Keep the dark tiers legible without flooding the page with ink */
     .funnel-tier { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1795,7 +1854,7 @@
 
 <footer>
   Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026. Monthly fees
-  are plan fees only; MLS dues are separate and not included here.
+  are plan fees only; enter your MLS dues as a business expense above.
   The tax rate is a planning estimate, not tax advice. Your real rate depends on your filing
   status, your state, and which deductions you qualify for. Confirm it with your CPA.
 </footer>
@@ -1815,6 +1874,7 @@
       { label: 'Other Living Expenses', amount: 500 },
     ],
     business: [
+      { label: 'MLS dues', amount: 0 },
       { label: 'CRM / Software', amount: 150 },
       { label: 'Marketing / Advertising', amount: 500 },
       { label: 'Signs / Lockboxes', amount: 100 },
@@ -1836,6 +1896,9 @@
     businessTaxRate: 0,
     commissionRate: 3,
     avgPrice: medianAvgPrice(),
+    // False until the user edits something themselves; drives the
+    // example-numbers banner and the save indicator.
+    touched: false,
   };
 
   // Pristine copy for "Load demo numbers" and for clearing back to a known base
@@ -1852,10 +1915,16 @@
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      setSaveStatus('Saved in this browser');
+      // Until the user has typed anything, "saved" would claim their data is
+      // here when only the example numbers are.
+      setSaveStatus(state.touched ? 'Saved in this browser' : '');
     } catch (e) {
       setSaveStatus('Could not save in this browser');
     }
+  }
+  function applyBanner() {
+    const banner = document.getElementById('demoBanner');
+    if (banner) banner.hidden = state.touched;
   }
   function loadState() {
     try {
@@ -1991,7 +2060,7 @@
     const container = document.getElementById('funnelPlans');
     if (targetNet <= 0 || commissionPct <= 0 || avgPrice <= 0) {
       container.innerHTML = '';
-      return { volume: 0, gci: 0, transactions: 0 };
+      return { volume: 0, gci: 0, transactions: 0, net: 0, winnerName: '' };
     }
     const solved = plans.map(p => ({ plan: p, ...solveRequiredTransactions(p, targetNet, commissionPct, avgPrice) }));
     const best = solved.reduce((a, b) => (a.transactions < b.transactions ? a : b));
@@ -2035,7 +2104,8 @@
       `;
     }).join('');
 
-    return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn, net: winnerNet };
+    const winnerName = (cards.find(c => c.net === winnerNet) || { plan: {} }).plan.name || '';
+    return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn, net: winnerNet, winnerName };
   }
 
   // ---------- Where one plan overtakes the other ----------
@@ -2316,11 +2386,29 @@
     setAndPulse('totalTransactions', String(totalTransactions));
     setAndPulse('cadence', cadenceText(totalTransactions));
 
+    // With nothing entered, teach what to do instead of showing a $0 funnel
+    const isEmpty = !(grossedUp > 0) || totalTransactions <= 0;
+    document.getElementById('emptyNote').hidden = !isEmpty;
+
+    // The operation each arrow performs
+    document.getElementById('opGross').textContent = isEmpty ? '' :
+      'personal share ÷ (1 − ' + state.personalTaxRate + '% tax), business added as-is';
+    document.getElementById('opVolume').textContent = isEmpty ? '' :
+      fmt(best.gci) + ' GCI ÷ ' + state.commissionRate + '% commission';
+    document.getElementById('opDeals').textContent = isEmpty ? '' :
+      '÷ ' + fmt(avgPrice) + ' average sale, rounded up to a whole deal';
+
+    // Why the plan cards show a bigger number than the tier above them
+    const solveNote = document.getElementById('solveNote');
+    solveNote.innerHTML = isEmpty ? '' :
+      'Each plan takes its fees out before you are paid, so we solve for the gross commission '
+      + 'income (<strong>GCI</strong>) that still nets you <strong>' + fmt(grossedUp) + '</strong> after fees:';
+
     // Which plan wins, and from where
     const cross = findCrossover(state.commissionRate, avgPrice);
     const crossNote = document.getElementById('crossoverNote');
     if (crossNote) {
-      if (!cross) {
+      if (isEmpty || !cross) {
         crossNote.textContent = '';
       } else {
         crossNote.innerHTML = '<strong>' + cross.from.name + '</strong> nets more up to '
@@ -2328,6 +2416,24 @@
           + '</strong> on, <strong>' + cross.to.name + '</strong> pulls ahead and the gap keeps widening.';
       }
     }
+
+    // The closing sentence that assembles the whole answer
+    const summary = document.getElementById('planSummary');
+    if (isEmpty || !best.winnerName) {
+      summary.hidden = true;
+    } else {
+      summary.hidden = false;
+      const pace = cadenceText(totalTransactions).split(' · ')[0].toLowerCase();
+      const covered = otherAnnual > 0
+        ? ', ' + fmt(Math.min(otherAnnual, personalAnnual)) + ' of it already covered by your other income'
+        : '';
+      document.getElementById('planSummaryText').innerHTML =
+        'Close <strong>' + totalTransactions + ' deals</strong> on the <strong>' + best.winnerName
+        + '</strong> — ' + pace + ', ' + fmt(requiredVolume) + ' in volume at your ' + fmt(avgPrice)
+        + ' average sale — and your <strong>' + fmt(personalAnnual)
+        + '</strong> personal year is paid for' + covered + '.';
+    }
+    applyBanner();
 
     // What the rounding up to a whole deal actually buys
     const surplusNote = document.getElementById('surplusNote');
@@ -2527,6 +2633,13 @@
   function applyMode() {
     document.getElementById('simplePanel').hidden = state.mode !== 'simple';
     document.getElementById('detailedPanel').hidden = state.mode !== 'detailed';
+    // The two modes take different units, so the intro must not promise
+    // "monthly" above three per-year fields.
+    document.getElementById('expenseHeading').textContent =
+      state.mode === 'simple' ? 'Your Take-Home Goal' : 'Personal & Business Expenses';
+    document.getElementById('expenseIntro').innerHTML = state.mode === 'simple'
+      ? 'Three numbers are enough. Enter <strong>per-year</strong> amounts, or switch back to break them down.'
+      : 'What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.';
     document.querySelectorAll('.mt-btn').forEach(b => {
       b.classList.toggle('is-on', b.dataset.mode === state.mode);
       b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
@@ -2563,6 +2676,14 @@
   });
   applyMode();
 
+  // Any input event in the two steps is a real user edit (programmatic value
+  // changes do not fire 'input'), which retires the example-numbers banner.
+  document.querySelectorAll('.step').forEach(stepEl => {
+    stepEl.addEventListener('input', () => {
+      if (!state.touched) { state.touched = true; applyBanner(); saveState(); }
+    });
+  });
+
   // The flow chart picks its geometry from the viewport, so redraw on resize
   let flowResizeTimer = null;
   window.addEventListener('resize', () => {
@@ -2591,6 +2712,7 @@
     state.personalTaxRate = DEFAULTS.personalTaxRate;
     state.commissionRate = DEFAULTS.commissionRate;
     state.avgPrice = DEFAULTS.avgPrice;
+    state.touched = true;
     syncInputs();
     recompute();
   });
