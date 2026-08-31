@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="page-flash.js"></script>
 <style>
   *, *::before, *::after { border-radius: 0 !important; }
   :root {
@@ -43,6 +44,34 @@
   input, textarea, button, select { font-family: inherit; }
   /* The brand sits on a light bar, because the wordmark is black. The two
      buttons are the whole navigation: no page title, no tagline. */
+  /* Page transition: the mark flashes over the navigation between the two
+     pages. Hidden outright when it is not running, so it can never swallow a
+     click, and skipped entirely for reduced motion. */
+  .page-flash {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  }
+  html.flashing .page-flash,
+  .page-flash.is-on {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.16s ease, visibility 0s;
+  }
+  .page-flash img { width: min(240px, 52vw); height: auto; }
+  @media (prefers-reduced-motion: reduce) {
+    .page-flash { display: none !important; }
+  }
+  @media print { .page-flash { display: none !important; } }
+
   header { background: transparent; padding: 0; }
   /* The bar carries the page's own padding, so the logo and the buttons line
      up with the content below them at every width. */
@@ -554,6 +583,7 @@
 </style>
 </head>
 <body>
+<div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" /></div>
 <header>
   <div class="header-bar">
     <img class="brand" src="remax-logo.png" alt="RE/MAX" />
