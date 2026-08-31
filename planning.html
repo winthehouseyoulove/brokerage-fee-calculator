@@ -1846,6 +1846,7 @@
   status, your state, and which deductions you qualify for. Confirm it with your CPA.
 </footer>
 
+<script src="fee-math.js"></script>
 <script src="agents-embed.js"></script>
 <script>
   // ---------- State ----------
@@ -1959,18 +1960,7 @@
     return toStep(percentile(prices, 0.5));
   }
 
-  const plans = [
-    {
-      key: 'no-stress', name: 'No Stress Plan', color: 'red',
-      monthly: 50, annualDues: 410, perTransaction: 199,
-      splitRate: 0.20, cap: 17000, postCapRate: 0.05,
-    },
-    {
-      key: 'executive', name: 'Executive Plan', color: 'blue',
-      monthly: 500, annualDues: 410, perTransaction: 199,
-      splitRate: 0.10, cap: 9000, postCapRate: 0.05,
-    },
-  ];
+  const plans = [FeeMath.PLANS.noStress, FeeMath.PLANS.executive];
 
   const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
   const fmtNum = (n) => Math.round(n).toLocaleString('en-US');
@@ -1989,25 +1979,8 @@
     el.classList.add('pulse');
   }
 
-  // ---------- Compute (verbatim from index.html) ----------
-  function compute(plan, gci, transactions, mls) {
-    const gciToCap = plan.cap / plan.splitRate;
-    let splitCost, capMet;
-    if (gci <= gciToCap) {
-      splitCost = gci * plan.splitRate;
-      capMet = false;
-    } else {
-      const remainingGci = gci - gciToCap;
-      splitCost = plan.cap + remainingGci * plan.postCapRate;
-      capMet = true;
-    }
-    const monthlyTotal = plan.monthly * 12;
-    const mlsTotal = mls * 12;
-    const transactionTotal = plan.perTransaction * transactions;
-    const totalCost = splitCost + monthlyTotal + mlsTotal + transactionTotal + plan.annualDues;
-    const net = gci - totalCost;
-    return { splitCost, monthlyTotal, mlsTotal, transactionTotal, dues: plan.annualDues, totalCost, net, capMet, gciToCap };
-  }
+  // Fee math lives in fee-math.js so both pages and tests.html run the same code.
+  const compute = FeeMath.compute;
 
   // ---------- Render expense line items ----------
   function renderLineItems(group) {
@@ -2022,25 +1995,7 @@
     `).join('');
   }
 
-  // ---------- Solve for the min whole-number transactions to hit a target net ----------
-  // Since you can't do a partial transaction, we round UP to the next whole deal.
-  // The actual GCI/Volume are therefore derived from that integer count, which
-  // means the agent typically EXCEEDS the target net (by the value of one partial deal).
-  function solveRequiredTransactions(plan, targetNet, commissionPct, avgPrice) {
-    const commRate = commissionPct / 100;
-    if (targetNet <= 0 || commRate <= 0 || avgPrice <= 0) {
-      return { gci: 0, volume: 0, transactions: 0, result: null, feasible: false };
-    }
-    for (let txn = 1; txn <= 10000; txn++) {
-      const volume = txn * avgPrice;
-      const gci = volume * commRate;
-      const result = compute(plan, gci, txn, 0);
-      if (result.net >= targetNet) {
-        return { gci, volume, transactions: txn, result, feasible: true };
-      }
-    }
-    return { gci: 0, volume: 0, transactions: 0, result: null, feasible: false };
-  }
+  const solveRequiredTransactions = FeeMath.solveRequiredTransactions;
 
   // ---------- Render RE/MAX plan cards INSIDE the funnel ----------
   // Solve for each plan's required volume → use the BEST plan's volume as the

@@ -260,6 +260,40 @@
     z-index: 1;
   }
   .plan.winner .plan-header { background: var(--win); }
+  .plan-remove {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    background: #ffffff;
+    color: var(--muted);
+    border: none;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: -1px 1px 4px rgba(0,0,0,0.08);
+  }
+  .plan-remove:hover { color: var(--win-text); }
+  .custom-add {
+    margin: 0 0 24px;
+    text-align: center;
+  }
+  .custom-add button {
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+  .custom-add button:hover {
+    border-color: var(--remax-blue);
+    color: var(--remax-blue);
+  }
   .plan-header {
     padding: 20px;
     color: var(--bg);
@@ -456,7 +490,7 @@
             <span class="sub">Avg commission</span>
           </div>
           <div class="half">
-            <input type="text" inputmode="numeric" id="mls" value="0" />
+            <input type="text" inputmode="numeric" id="mls" value="50" />
             <span class="sub">MLS fees / mo</span>
           </div>
         </div>
@@ -466,11 +500,16 @@
 
   <div class="plans" id="plans"></div>
 
+  <div class="custom-add" id="customAdd">
+    <button type="button" id="btnAddCustom">+ Compare against the plan you pay today</button>
+  </div>
+
   <footer>
     Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026. Monthly fees are plan fees only; enter MLS dues separately above.
   </footer>
 </div>
 
+<script src="fee-math.js"></script>
 <script src="agents-embed.js"></script>
 <script>
   const currentPlan = {
@@ -486,53 +525,16 @@
     postCapRate: 0.30,
   };
 
-  const plans = [
-    {
-      key: 'no-stress',
-      name: 'No Stress Plan',
-      color: 'red',
-      monthly: 50,
-      annualDues: 410,
-      perTransaction: 199,
-      splitRate: 0.20,
-      cap: 17000,
-      postCapRate: 0.05,
-    },
-    {
-      key: 'executive',
-      name: 'Executive Plan',
-      color: 'blue',
-      monthly: 500,
-      annualDues: 410,
-      perTransaction: 199,
-      splitRate: 0.10,
-      cap: 9000,
-      postCapRate: 0.05,
-    },
-  ];
+  // The custom plan is off by default; most agents are comparing the two RE/MAX
+  // plans and do not need a third card in the way until they ask for it.
+  let showCustom = false;
+
+  const plans = [FeeMath.PLANS.noStress, FeeMath.PLANS.executive];
 
   const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
 
-  function compute(plan, gci, transactions, mls) {
-    // Pre-cap split: GCI portion that fills the cap.
-    // brokerage take during pre-cap = gci_pre * splitRate, until it reaches cap.
-    const gciToCap = plan.cap / plan.splitRate; // GCI needed to hit cap
-    let splitCost, capMet;
-    if (gci <= gciToCap) {
-      splitCost = gci * plan.splitRate;
-      capMet = false;
-    } else {
-      const remainingGci = gci - gciToCap;
-      splitCost = plan.cap + remainingGci * plan.postCapRate;
-      capMet = true;
-    }
-    const monthlyTotal = plan.monthly * 12;
-    const mlsTotal = mls * 12;
-    const transactionTotal = plan.perTransaction * transactions;
-    const totalCost = splitCost + monthlyTotal + mlsTotal + transactionTotal + plan.annualDues;
-    const net = gci - totalCost;
-    return { splitCost, monthlyTotal, mlsTotal, transactionTotal, dues: plan.annualDues, totalCost, net, capMet, gciToCap };
-  }
+  // Fee math lives in fee-math.js so both pages and tests.html run the same code.
+  const compute = FeeMath.compute;
 
   function render() {
     const parseNum = (id) => Number(document.getElementById(id).value.replace(/,/g, '')) || 0;
@@ -542,7 +544,7 @@
     const transactions = parseNum('transactions');
     const mls = parseNum('mls');
 
-    const allPlans = [...plans, currentPlan];
+    const allPlans = showCustom ? [...plans, currentPlan] : [...plans];
     const results = allPlans.map(p => ({ plan: p, ...compute(p, gci, transactions, mls) }));
     const remaxResults = results.filter(r => !r.plan.editable);
     const winnerNet = Math.max(...remaxResults.map(r => r.net));
@@ -567,6 +569,7 @@
       return `
         <div class="plan ${isWinner ? 'winner' : ''}">
           ${isWinner ? '<div class="winner-badge">Best RE/MAX Option</div>' : ''}
+          ${r.plan.editable ? '<button type="button" class="plan-remove" id="btnRemoveCustom" aria-label="Remove this plan">&times;</button>' : ''}
           <div class="plan-header ${r.plan.color}">
             <h3>${r.plan.editable ? `<input class="name-edit" data-field="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />` : r.plan.name}</h3>
             <div class="specs">${specs}</div>
@@ -594,6 +597,8 @@
         </div>
       `;
     }).join('');
+
+    document.getElementById('customAdd').hidden = showCustom;
   }
 
   function formatWithCommas(el) {
@@ -634,6 +639,20 @@
   });
   document.getElementById('commissionRate').addEventListener('input', render);
 
+  document.getElementById('btnAddCustom').addEventListener('click', () => {
+    showCustom = true;
+    render();
+    const nameEl = document.querySelector('.name-edit');
+    if (nameEl) nameEl.focus();
+  });
+
+  document.getElementById('plans').addEventListener('click', (e) => {
+    if (!e.target.closest('#btnRemoveCustom')) return;
+    showCustom = false;
+    render();
+    document.getElementById('btnAddCustom').focus();
+  });
+
   document.getElementById('plans').addEventListener('input', (e) => {
     const el = e.target;
     const field = el.dataset.field;
@@ -650,6 +669,10 @@
     } else {
       currentPlan[field] = raw;
     }
+    // With no cap the agent is past it from the first dollar, so the post-cap
+    // rate is the one that bites. The card hides that field when the cap is 0,
+    // which left the visible Split doing nothing. Keep the two in step instead.
+    if (currentPlan.cap === 0) currentPlan.postCapRate = currentPlan.splitRate;
     const caret = el.selectionStart;
     render();
     const fresh = document.querySelector(`[data-field="${field}"]`);
