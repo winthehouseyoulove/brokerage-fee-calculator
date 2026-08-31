@@ -82,6 +82,33 @@
     position: relative;
     margin-bottom: 20px;
   }
+  .agent-input { position: relative; }
+  .agent-input input { padding-right: 40px; }
+  /* type="search" brings its own clear button; this control has its own */
+  .agent-input input::-webkit-search-cancel-button,
+  .agent-input input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .agent-clear {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .agent-clear:hover { background: var(--border); color: var(--win); }
   .agent-search input {
     width: 100%;
     height: 52px;
@@ -519,7 +546,13 @@
   <div class="inputs">
     <h2>Your Production</h2>
     <div class="agent-search">
-      <input type="text" id="agentSearch" placeholder="Search for an agent to auto-fill (e.g. Adam Marit)" autocomplete="off" />
+      <div class="agent-input">
+        <input type="search" id="agentSearch" name="mls-agent-lookup"
+               placeholder="Search an agent to fill in their 2025 production"
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="agentResults" />
+        <button type="button" class="agent-clear" id="agentClear" aria-label="Clear the search" hidden>&times;</button>
+      </div>
       <div class="agent-results" id="agentResults"></div>
       <div class="agent-loaded" id="agentLoaded" style="display:none;"></div>
     </div>
@@ -575,7 +608,7 @@
     <button type="button" id="btnAddCustom">
       <span class="ca-plus">+</span>
       <span class="ca-text">
-        <b>Add the plan you pay today</b>
+        <b>Add custom plan</b>
         <small>Compare both RE/MAX plans against your current brokerage.</small>
       </span>
     </button>
@@ -839,6 +872,7 @@
       ? `<div class="agent-result ar-more">Showing ${matches.length} of ${totalMatches} — keep typing to narrow</div>`
       : '');
     resultsEl.classList.add('open');
+    searchEl.setAttribute('aria-expanded', 'true');
   }
 
   function selectAgent(agent) {
@@ -847,14 +881,31 @@
     updateAvgPrice();
     render();
     searchEl.value = agent.name;
+    syncClear();
     resultsEl.classList.remove('open');
-    loadedEl.textContent = `Loaded ${agent.name}, ${agent.office} — 2025 MLS data ($${agent.volume.toLocaleString('en-US')} · ${agent.units} units)`;
+    searchEl.setAttribute('aria-expanded', 'false');
+    loadedEl.textContent = `Loaded ${agent.name}, ${agent.office} — 2025 MLS data ($${agent.volume.toLocaleString('en-US')} · ${agent.units} ${agent.units === 1 ? 'unit' : 'units'})`;
     loadedEl.style.display = 'block';
   }
+
+  const clearEl = document.getElementById('agentClear');
+  // Shown whenever there is text to clear, matched agent or not. Safari filling
+  // the box uninvited is exactly when it is wanted most.
+  function syncClear() { clearEl.hidden = searchEl.value.trim() === ''; }
+  clearEl.addEventListener('click', () => {
+    searchEl.value = '';
+    loadedEl.style.display = 'none';
+    resultsEl.classList.remove('open');
+    searchEl.setAttribute('aria-expanded', 'false');
+    syncClear();
+    searchEl.focus();
+  });
+  syncClear();
 
   searchEl.addEventListener('input', () => {
     activeIndex = -1;
     loadedEl.style.display = 'none';
+    syncClear();
     renderResults(filterAgents(searchEl.value));
   });
 
@@ -891,7 +942,10 @@
   });
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.agent-search')) resultsEl.classList.remove('open');
+    if (!e.target.closest('.agent-search')) {
+      resultsEl.classList.remove('open');
+      searchEl.setAttribute('aria-expanded', 'false');
+    }
   });
 </script>
 </body>

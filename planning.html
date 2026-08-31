@@ -1123,6 +1123,12 @@
   .apc-agent input { height: 38px; font-size: 14px; }
   .agent-input { position: relative; }
   .agent-input input { padding-right: 34px; }
+  /* type="search" brings its own clear button; this control has its own */
+  .agent-input input::-webkit-search-cancel-button,
+  .agent-input input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
   .agent-clear {
     position: absolute;
     top: 50%;
@@ -1141,7 +1147,7 @@
     color: var(--muted);
     cursor: pointer;
   }
-  .agent-clear:hover { color: var(--remax-red); }
+  .agent-clear:hover { background: var(--border); color: var(--remax-red); }
 
   /* What the matched agent actually did, as figures rather than a sentence */
   .apc-agent .agent-loaded {
@@ -1869,7 +1875,7 @@
           <button type="button" id="btnAddCustom">
             <span class="ca-plus">+</span>
             <span class="ca-text">
-              <b>Add the plan you pay today</b>
+              <b>Add custom plan</b>
               <small>Compare both RE/MAX plans against your current brokerage.</small>
             </span>
           </button>
@@ -1916,7 +1922,10 @@
           <div class="apc-label">Average Sale Price</div>
           <div class="agent-search apc-agent">
             <div class="agent-input">
-              <input type="text" id="agentSearch" placeholder="Search your name to use your own average sale price" autocomplete="off" />
+              <input type="search" id="agentSearch" name="mls-agent-lookup"
+                     placeholder="Search an agent to use their average sale price"
+                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                     role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="agentResults" />
               <button type="button" class="agent-clear" id="agentClear" aria-label="Clear the matched agent" hidden>&times;</button>
             </div>
             <div class="agent-results" id="agentResults"></div>
@@ -2657,7 +2666,7 @@
     const agent = state.agentName
       ? agents.find(a => a.name === state.agentName && a.units > 0)
       : null;
-    if (clear) clear.hidden = !agent;
+    if (clear) clear.hidden = document.getElementById('agentSearch').value.trim() === '';
     if (loaded) {
       loaded.hidden = !agent;
       loaded.innerHTML = agent
@@ -3060,6 +3069,7 @@
           </div>`).join('')
       : '<div class="agent-result"><span class="ar-empty">No matches</span></div>';
     resultsEl.classList.add('open');
+    searchEl.setAttribute('aria-expanded', 'true');
   }
 
   function setAvgPrice(value) {
@@ -3077,7 +3087,9 @@
     setAvgPrice(toStep(agent.volume / agent.units));
     searchEl.value = agent.name;
     resultsEl.classList.remove('open');
+    searchEl.setAttribute('aria-expanded', 'false');
     renderAvgPriceNote();
+    syncClear();
     recompute();
   }
 
@@ -3085,11 +3097,21 @@
     state.agentName = '';
     setAvgPrice(medianAvgPrice());
     searchEl.value = '';
+    resultsEl.classList.remove('open');
+    searchEl.setAttribute('aria-expanded', 'false');
     renderAvgPriceNote();
+    syncClear();
     recompute();
   }
 
-  searchEl.addEventListener('input', () => { activeIndex = -1; renderResults(filterAgents(searchEl.value)); });
+  // The x is there whenever there is something to clear, not only once an
+  // agent is matched. Half-typed text needs clearing too, and Safari filling
+  // the box uninvited is exactly when it is wanted most.
+  function syncClear() {
+    document.getElementById('agentClear').hidden = searchEl.value.trim() === '';
+  }
+
+  searchEl.addEventListener('input', () => { activeIndex = -1; syncClear(); renderResults(filterAgents(searchEl.value)); });
   searchEl.addEventListener('focus', () => { activeIndex = -1; renderResults(filterAgents(searchEl.value)); });
   searchEl.addEventListener('keydown', (e) => {
     const matches = filterAgents(searchEl.value);
@@ -3117,8 +3139,12 @@
     searchEl.focus();
   });
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.agent-search')) resultsEl.classList.remove('open');
+    if (!e.target.closest('.agent-search')) {
+      resultsEl.classList.remove('open');
+      searchEl.setAttribute('aria-expanded', 'false');
+    }
   });
+  syncClear();
 
   // ---------- One link that carries both pages ----------
   // The comparison page needs the production numbers this plan produced, so
