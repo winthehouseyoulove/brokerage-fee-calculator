@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RE/MAX Alliance — Business Plan Builder</title>
+<title>RE/MAX Alliance — Business Plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -98,35 +98,41 @@
   input, textarea, button, select {
     font-family: inherit;
   }
+  /* The brand sits on a light bar, because the wordmark is black. The two
+     buttons are the whole navigation: no page title, no tagline. */
   header {
-    background: var(--header-bg);
-    color: var(--header-text);
-    padding: 32px 24px;
-    text-align: center;
-    position: relative;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
   }
-  header h1 { margin: 0 0 6px; font-size: 28px; font-weight: 700; }
-  header p { margin: 0; opacity: 0.9; font-size: 15px; }
-  .top-nav {
-    position: absolute;
-    top: 16px;
-    right: 20px;
+  .header-bar {
+    max-width: 1100px;
+    margin: 0 auto;
     display: flex;
-    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 16px;
+  }
+  .brand { height: 30px; width: auto; display: block; }
+  .top-nav {
+    display: flex;
+    gap: 6px;
     font-size: 13px;
   }
   .top-nav a {
-    color: var(--header-text);
+    color: var(--remax-blue);
     text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    opacity: 0.75;
-    transition: opacity 0.15s, background 0.15s;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    font-weight: 600;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
   }
-  .top-nav a:hover { opacity: 1; background: rgba(255,255,255,0.08); }
-  .top-nav a.active { opacity: 1; background: rgba(255,255,255,0.12); font-weight: 600; }
-  @media (max-width: 600px) {
-    .top-nav { position: static; justify-content: center; margin-bottom: 12px; }
+  .top-nav a:hover { border-color: var(--remax-blue); }
+  .top-nav a.active {
+    background: var(--remax-blue);
+    border-color: var(--remax-blue);
+    color: var(--bg);
   }
 
   .layout {
@@ -243,10 +249,12 @@
 
   /* Toolbar under the page title */
   .toolbar {
+    max-width: 1100px;
+    margin: 14px auto 0;
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
-    margin: 0 0 22px;
   }
   .tb-btn {
     appearance: none;
@@ -1149,18 +1157,24 @@
   }
   .agent-clear:hover { background: var(--border); color: var(--remax-red); }
 
-  /* What the matched agent actually did, as figures rather than a sentence */
-  .apc-agent .agent-loaded {
+  /* The matched agent's figures ride inside the field they filled, so the
+     card does not grow a second line to say what was just selected. */
+  .agent-inline {
+    position: absolute;
+    top: 50%;
+    right: 34px;
+    transform: translateY(-50%);
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 14px;
-    margin-top: 8px;
-    color: var(--text);
+    gap: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    pointer-events: none;
   }
-  .al-name { font-size: 13px; font-weight: 700; }
-  .al-stat { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .al-stat b { color: var(--text); font-weight: 700; }
+  .agent-inline b { color: var(--text); font-weight: 700; }
+  /* Too narrow to hold the name and the figures on one line */
+  @media (max-width: 560px) { .agent-inline { display: none; } }
 
   /* Picking a plan drives the funnel and the money flow below it */
   .funnel-plan { cursor: pointer; }
@@ -1710,11 +1724,13 @@
 </head>
 <body>
 <header>
-  <nav class="top-nav">
-    <a href="index.html">Plan Comparison</a>
-    <a href="planning.html" class="active">Business Plan</a>
-  </nav>
-  <h1>Business Plan Builder</h1>
+  <div class="header-bar">
+    <img class="brand" src="remax-logo.png" alt="RE/MAX" />
+    <nav class="top-nav">
+      <a href="index.html">Plan Comparison</a>
+      <a href="planning.html" class="active">Business Plan</a>
+    </nav>
+  </div>
   <div class="toolbar">
     <button type="button" class="tb-btn" id="btnCopyLink">Copy link to this plan</button>
     <button type="button" class="tb-btn" id="btnPrint">Print or save as PDF</button>
@@ -1722,7 +1738,6 @@
     <button type="button" class="tb-btn" id="btnClear">Clear all</button>
     <span class="tb-status" id="saveStatus"></span>
   </div>
-  <p>RE/MAX Alliance — Build the plan, then see the numbers</p>
 </header>
 
 <div class="layout">
@@ -1926,10 +1941,10 @@
                      placeholder="Search an agent to use their average sale price"
                      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                      role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="agentResults" />
+              <span class="agent-inline" id="agentInline" hidden></span>
               <button type="button" class="agent-clear" id="agentClear" aria-label="Clear the matched agent" hidden>&times;</button>
             </div>
             <div class="agent-results" id="agentResults"></div>
-            <div class="agent-loaded" id="agentLoaded" hidden></div>
           </div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
@@ -2661,21 +2676,22 @@
     // No roster loaded means no reference to give, so drop the note entirely.
     if (!prices.length) { el.remove(); return; }
     const money = n => '$' + toStep(n).toLocaleString('en-US');
-    const loaded = document.getElementById('agentLoaded');
+    const search = document.getElementById('agentSearch');
+    const inline = document.getElementById('agentInline');
     const clear = document.getElementById('agentClear');
     const agent = state.agentName
       ? agents.find(a => a.name === state.agentName && a.units > 0)
       : null;
-    if (clear) clear.hidden = document.getElementById('agentSearch').value.trim() === '';
-    if (loaded) {
-      loaded.hidden = !agent;
-      loaded.innerHTML = agent
-        ? `<span class="al-name">${agent.name}</span>`
-          + `<span class="al-stat"><b>${agent.units}</b> ${agent.units === 1 ? 'unit' : 'units'}</span>`
-          + `<span class="al-stat"><b>${fmt(agent.volume)}</b> volume</span>`
-          + `<span class="al-stat"><b>${money(agent.volume / agent.units)}</b> average sale</span>`
-          + '<span class="al-stat">2025 MLS</span>'
+    if (clear) clear.hidden = search.value.trim() === '';
+    if (inline) {
+      inline.hidden = !agent;
+      inline.innerHTML = agent
+        ? `<span><b>${agent.units}</b> ${agent.units === 1 ? 'unit' : 'units'}</span>`
+          + `<span><b>${money(agent.volume / agent.units)}</b> avg sale</span>`
         : '';
+      // Keep the typed name from running under the figures. A hidden span
+      // measures zero, so the padding falls back to just the x.
+      search.style.paddingRight = (inline.offsetWidth + 42) + 'px';
     }
     // The agent's own figures are in the line above, so this stays the market
     // reference and does not say the same thing twice.
@@ -3136,7 +3152,6 @@
   document.getElementById('agentClear').addEventListener('click', (e) => {
     e.stopPropagation();
     clearAgent();
-    searchEl.focus();
   });
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.agent-search')) {
