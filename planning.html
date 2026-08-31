@@ -923,16 +923,42 @@
   }
   .funnel-note strong { color: var(--text); font-weight: 700; }
 
-  /* The operation an arrow performs, so the math between tiers is readable */
-  .flow-op {
-    font-size: 11.5px;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-    padding: 3px 10px;
-    max-width: 340px;
+  /* Each step's math lives behind the ? on its own tier, so the arrows stay
+     plain lines. The nowrap default is for one-line formulas; these run long. */
+  .tier-tooltip.wide { white-space: normal; width: 280px; }
+
+  /* Progressive reveal: one step at a time, the arrow beneath opens the next */
+  .is-locked { display: none !important; }
+  .funnel-flow.gate-active {
+    cursor: pointer;
+    padding-bottom: 8px;
   }
-  .flow-op:empty { display: none; }
+  .gate-label {
+    font-family: inherit;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--remax-blue);
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .funnel-flow.gate-active:hover .gate-label { border-color: var(--remax-blue); }
+  .gate-all {
+    display: block;
+    margin: 8px auto 0;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .gate-all:hover { color: var(--remax-blue); }
 
   /* Example-numbers notice, shown until the first real edit */
   .demo-banner {
@@ -1026,7 +1052,6 @@
   /* Where every dollar of GCI ends up */
   .flow-block {
     width: 100%;
-    max-width: 720px;
     background: var(--card);
     border: 2px solid var(--border);
     padding: 16px 18px 14px;
@@ -1076,7 +1101,67 @@
     gap: 16px;
     margin: 0;
   }
-  @media (max-width: 600px) { .funnel-plans { grid-template-columns: 1fr; } }
+  /* A third card needs the room the two-up layout does not have */
+  .funnel-plans.has-custom { max-width: 1052px; grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 900px) { .funnel-plans.has-custom { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) {
+    .funnel-plans, .funnel-plans.has-custom { grid-template-columns: 1fr; }
+  }
+
+  /* The agent search sits inside the average sale price card */
+  .apc-agent { margin: 0 0 12px; padding: 0; }
+  .apc-agent input { height: 38px; font-size: 14px; }
+  .apc-agent .agent-loaded { display: flex; gap: 8px; align-items: baseline; }
+  .apc-agent .al-clear {
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--muted); font-size: 12px; text-decoration: underline;
+  }
+
+  /* Picking a plan drives the funnel and the money flow below it */
+  .funnel-plan { cursor: pointer; }
+  .funnel-plan.selected { border-color: var(--remax-blue); box-shadow: 0 6px 16px rgba(12,39,73,0.18); }
+  .funnel-plan.selected.winner { border-color: var(--win); }
+  .fp-pick {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .fp-pick:hover { color: var(--remax-blue); }
+  .funnel-plan.selected .fp-pick { background: var(--remax-blue); color: #fff; cursor: default; }
+  .funnel-plan.selected.winner .fp-pick { background: var(--win); }
+  .fp-remove {
+    position: absolute; top: 0; right: 0; z-index: 2;
+    background: #fff; color: var(--muted); border: none;
+    width: 26px; height: 26px; font-size: 15px; line-height: 1; cursor: pointer;
+    box-shadow: -1px 1px 4px rgba(0,0,0,0.08);
+  }
+  .fp-remove:hover { color: var(--win); }
+  .fp-edit {
+    background: transparent; border: none; border-bottom: 1px dotted rgba(255,255,255,0.5);
+    color: inherit; font: inherit; font-variant-numeric: tabular-nums;
+    padding: 0; width: auto; min-width: 1ch; field-sizing: content; text-align: right;
+  }
+  .fp-edit:focus { outline: none; border-bottom-color: #fff; }
+  .fp-name-edit {
+    background: transparent; border: none; border-bottom: 1px dotted rgba(255,255,255,0.5);
+    color: inherit; font: inherit; font-size: 15px; font-weight: 700; padding: 0; width: 100%;
+  }
+  .fp-name-edit:focus { outline: none; border-bottom-color: #fff; }
+  .custom-add { width: 100%; max-width: 720px; margin: 12px 0 0; }
+  .custom-add button {
+    width: 100%; background: none; border: 1px dashed var(--border);
+    color: var(--muted); padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .custom-add button:hover { border-color: var(--remax-blue); color: var(--remax-blue); }
   .funnel-plan {
     background: var(--card);
     border: 2px solid var(--border);
@@ -1560,6 +1645,7 @@
   </nav>
   <h1>Business Plan Builder</h1>
   <div class="toolbar">
+    <button type="button" class="tb-btn" id="btnCopyLink">Copy link to this plan</button>
     <button type="button" class="tb-btn" id="btnPrint">Print or save as PDF</button>
     <button type="button" class="tb-btn" id="btnDemo">Load demo numbers</button>
     <button type="button" class="tb-btn" id="btnClear">Clear all</button>
@@ -1577,8 +1663,8 @@
       <p class="step-sub" id="expenseIntro">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
       <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own, or press Clear all and start fresh.</p>
       <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
-        <button type="button" class="mt-btn is-on" data-mode="detailed">Break down my expenses</button>
-        <button type="button" class="mt-btn" data-mode="simple">I know my take-home goal</button>
+        <button type="button" class="mt-btn is-on" data-mode="simple">I know my take-home goal</button>
+        <button type="button" class="mt-btn" data-mode="detailed">Break down my expenses</button>
       </div>
 
       <div id="simplePanel" class="simple-panel" hidden>
@@ -1596,7 +1682,7 @@
           <div class="trc-sublabel">Per year</div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
-            <input type="text" inputmode="numeric" id="simpleBusiness" value="14,496" />
+            <input type="text" inputmode="numeric" id="simpleBusiness" value="15,096" />
           </div>
           <p class="sp-hint">Everything you spend running the business outside the brokerage.</p>
         </div>
@@ -1648,15 +1734,16 @@
     <!-- Steps 2-4: Income → Volume funnel -->
     <div class="step funnel-step">
       <h2>How Much Do You Need to Sell?</h2>
-      <p class="step-sub">Walk down: what selling has to cover once your other income is counted, grossed up for the tax on the personal half, converted to sales volume. The volume is solved so the best RE/MAX plan hits your goal.</p>
+      <p class="step-sub">Walk down: what selling has to cover once your other income is counted, grossed up for the tax on the personal half, converted to sales volume. The volume is solved so the plan you pick hits your goal. Until you pick one, it runs on whichever plan needs the fewest deals.</p>
       <div class="funnel">
 
         <p class="funnel-note" id="emptyNote" hidden>Enter your expenses above, or press <strong>Load demo numbers</strong>, to see what you need to sell.</p>
 
         <!-- Tier 1: the year's total need (personal living + business expenses) -->
         <div class="funnel-tier t1">
+          <div class="tier-tooltip wide" id="needTooltip"></div>
           <div class="tier-num" id="minimumIncome">$0</div>
-          <div class="tier-label">What Real Estate Has to Cover</div>
+          <div class="tier-label">What Real Estate Has to Cover<span class="tier-info" id="needInfo" tabindex="0">?</span></div>
           <div class="tier-sub"><span id="tier1Personal">$0</span> personal<span id="tier1Offset" hidden></span> + <span id="tier1Business">$0</span> business</div>
         </div>
 
@@ -1691,17 +1778,16 @@
         </div>
 
         <!-- Flow: Tax card → Before Tax Income -->
-        <div class="funnel-flow simple has-op">
-          <div class="flow-line"></div>
-          <div class="flow-op" id="opGross"></div>
+        <div class="funnel-flow simple">
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
         <!-- Tier 2: Before Tax Income -->
         <div class="funnel-tier t2">
+          <div class="tier-tooltip wide" id="grossTooltip"></div>
           <div class="tier-num" id="grossedUp">$0</div>
-          <div class="tier-label">Before Tax Income Needed</div>
+          <div class="tier-label">Before Tax Income Needed<span class="tier-info" id="grossInfo" tabindex="0">?</span></div>
         </div>
 
         <!-- Flow: straight vertical from Before Tax Income → Plans -->
@@ -1714,6 +1800,9 @@
 
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
+        <div class="custom-add" id="customAdd">
+          <button type="button" id="btnAddCustom">+ Compare against the plan you pay today</button>
+        </div>
         <p class="funnel-note" id="crossoverNote"></p>
 
         <div class="funnel-flow simple">
@@ -1733,9 +1822,7 @@
           <p class="trc-note">The rate you actually collect on your side, not the total written on the deal. Change it if your market is negotiating something different.</p>
         </div>
 
-        <div class="funnel-flow simple has-op">
-          <div class="flow-line"></div>
-          <div class="flow-op" id="opVolume"></div>
+        <div class="funnel-flow simple">
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
@@ -1756,6 +1843,11 @@
         <!-- Average Sale Price card with inline label and bottom slider -->
         <div class="avg-price-card">
           <div class="apc-label">Average Sale Price</div>
+          <div class="agent-search apc-agent">
+            <input type="text" id="agentSearch" placeholder="Search your name to use your own average sale price" autocomplete="off" />
+            <div class="agent-results" id="agentResults"></div>
+            <div class="agent-loaded" id="agentLoaded" hidden></div>
+          </div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
             <input type="text" inputmode="numeric" id="avgPrice" value="400,000" />
@@ -1765,17 +1857,16 @@
         </div>
 
         <!-- Flow: simple (Avg Price → Transactions) -->
-        <div class="funnel-flow simple has-op">
-          <div class="flow-line"></div>
-          <div class="flow-op" id="opDeals"></div>
+        <div class="funnel-flow simple">
           <div class="flow-line"></div>
           <div class="flow-arrow"></div>
         </div>
 
         <!-- Tier 4: Total Transactions / Year -->
         <div class="funnel-tier t4">
+          <div class="tier-tooltip wide" id="dealsTooltip"></div>
           <div class="tier-num" id="totalTransactions">0</div>
-          <div class="tier-label">Total Transactions / Year</div>
+          <div class="tier-label">Total Transactions / Year<span class="tier-info" id="dealsInfo" tabindex="0">?</span></div>
           <div class="tier-sub" id="cadence">0 per month</div>
         </div>
         <p class="funnel-note" id="surplusNote"></p>
@@ -1810,7 +1901,10 @@
   @media print {
     /* Controls do nothing on paper */
     .toolbar, .mode-toggle, .li-add, .li-remove, .apc-slider,
-    .tier-info, .tax-tooltip, .tier-tooltip { display: none !important; }
+    .tier-info, .tax-tooltip, .tier-tooltip,
+    .gate-label, .gate-all, .agent-results { display: none !important; }
+    /* Print the whole funnel, not just as far as the reader clicked */
+    .is-locked { display: block !important; }
 
     html, body { background: #fff; }
     body { font-size: 11pt; }
@@ -1841,14 +1935,19 @@
 
 <footer>
   Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026. Monthly fees
-  are plan fees only; enter your MLS dues as a business expense above.
+  are plan fees only; MLS dues are a separate business expense above, defaulted to $50 a month.
   The tax rate is a planning estimate, not tax advice. Your real rate depends on your filing
   status, your state, and which deductions you qualify for. Confirm it with your CPA.
 </footer>
 
 <script src="fee-math.js"></script>
+<script src="share.js"></script>
 <script src="agents-embed.js"></script>
 <script>
+  // The Dayton roster: name, units and volume for 999 agents.
+  // Declared here because the state below seeds itself from it.
+  const agents = window.__AGENTS__ || [];
+
   // ---------- State ----------
   const state = {
     // Amounts are monthly
@@ -1862,7 +1961,7 @@
       { label: 'Other Living Expenses', amount: 500 },
     ],
     business: [
-      { label: 'MLS dues', amount: 0 },
+      { label: 'MLS dues', amount: 50 },
       { label: 'CRM / Software', amount: 150 },
       { label: 'Marketing / Advertising', amount: 500 },
       { label: 'Signs / Lockboxes', amount: 100 },
@@ -1875,15 +1974,30 @@
       { label: 'Household / spouse income', amount: 0 },
       { label: 'Side job', amount: 0 },
     ],
-    mode: 'detailed',
+    mode: 'simple',
     // Simple mode carries annual figures instead of the itemised monthly lists
     goalTakeHome: 80000,
-    simpleBusiness: 14496,
+    simpleBusiness: 15096,
     simpleOtherIncome: 0,
+    // True once the user has typed in the take-home fields themselves, so
+    // flipping to the detailed breakdown and back cannot overwrite them.
+    simpleEdited: false,
     personalTaxRate: 27,
     businessTaxRate: 0,
     commissionRate: 3,
     avgPrice: medianAvgPrice(),
+    // The agent whose own average sale price is driving the number above.
+    // Empty means nobody is matched, so the area median stands in.
+    agentName: '',
+    // Which plan the funnel and the money flow are built on. Empty means
+    // whichever plan needs the fewest deals.
+    selectedPlan: '',
+    showCustomPlan: false,
+    customPlan: {
+      key: 'custom', name: 'Your Current Plan', editable: true,
+      monthly: 300, annualDues: 0, perTransaction: 100,
+      splitRate: 0.30, cap: 0, postCapRate: 0.30,
+    },
     // False until the user edits something themselves; drives the
     // example-numbers banner and the save indicator.
     touched: false,
@@ -1939,7 +2053,7 @@
   // Each agent's own average sale price (their volume over their units), sorted.
   // Seeds the slider and backs the reference note under it.
   function agentAvgPrices() {
-    return (window.__AGENTS__ || [])
+    return agents
       .filter(a => a.units > 0 && a.volume > 0)
       .map(a => a.volume / a.units)
       .sort((a, b) => a - b);
@@ -1961,6 +2075,12 @@
   }
 
   const plans = [FeeMath.PLANS.noStress, FeeMath.PLANS.executive];
+
+  // The two RE/MAX plans, plus the agent's current plan once they add it.
+  const activePlans = () => state.showCustomPlan ? plans.concat([state.customPlan]) : plans;
+
+  // A plan the agent named themselves already carries its own article.
+  const withArticle = (name) => /^(the|your|my|our|a|an)\b/i.test(name) ? name : 'the ' + name;
 
   const fmt = (n) => '$' + Math.round(n).toLocaleString('en-US');
   const fmtNum = (n) => Math.round(n).toLocaleString('en-US');
@@ -2004,34 +2124,57 @@
   // short (or over, if it has a worse cap structure).
   function renderFunnelPlans(targetNet, commissionPct, avgPrice) {
     const container = document.getElementById('funnelPlans');
+    const addBtn = document.getElementById('customAdd');
+    if (addBtn) addBtn.hidden = state.showCustomPlan;
+    container.classList.toggle('has-custom', state.showCustomPlan);
     if (targetNet <= 0 || commissionPct <= 0 || avgPrice <= 0) {
       container.innerHTML = '';
-      return { volume: 0, gci: 0, transactions: 0, net: 0, winnerName: '' };
+      return { volume: 0, gci: 0, transactions: 0, net: 0, winnerName: '', chosenName: '' };
     }
-    const solved = plans.map(p => ({ plan: p, ...solveRequiredTransactions(p, targetNet, commissionPct, avgPrice) }));
+    const onPage = activePlans();
+    const solved = onPage.map(p => ({ plan: p, ...solveRequiredTransactions(p, targetNet, commissionPct, avgPrice) }))
+      .filter(x => x.feasible);
+    if (!solved.length) {
+      container.innerHTML = '';
+      return { volume: 0, gci: 0, transactions: 0, net: 0, winnerName: '', chosenName: '' };
+    }
     const best = solved.reduce((a, b) => (a.transactions < b.transactions ? a : b));
-    const sharedTxn = best.transactions;
+    // The funnel below is built on the plan the agent picked. Until they pick
+    // one it runs on the plan that needs the fewest deals.
+    const chosen = solved.find(x => x.plan.key === state.selectedPlan) || best;
+    const sharedTxn = chosen.transactions;
     const sharedVolume = sharedTxn * avgPrice;
     const sharedGci = sharedVolume * (commissionPct / 100);
 
-    const cards = plans.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
-    const winnerNet = Math.max(...cards.map(c => c.net));
+    const cards = onPage.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
+    const winnerNet = Math.max(...cards.filter(c => !c.plan.editable).map(c => c.net));
 
     container.innerHTML = cards.map(r => {
-      const isWinner = r.net === winnerNet;
+      const isWinner = !r.plan.editable && r.net === winnerNet;
+      const isChosen = r.plan.key === chosen.plan.key;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
       const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
-      return `
-        <div class="funnel-plan ${isWinner ? 'winner' : ''}">
-          ${isWinner ? '<div class="fp-winner-badge">Best Option</div>' : ''}
-          <div class="fp-header">
-            <h4 class="fp-name">${r.plan.name}</h4>
-            <div class="fp-specs">
+      const specs = r.plan.editable ? `
+              <div><div class="fp-spec-label">Split</div><input class="fp-edit" data-cfield="agentShare" value="${Math.round((1 - r.plan.splitRate) * 100)}" />/${Math.round(r.plan.splitRate * 100)}</div>
+              <div><div class="fp-spec-label">Plan Fee</div>$<input class="fp-edit" data-cfield="monthly" value="${r.plan.monthly}" />/mo</div>
+              <div><div class="fp-spec-label">Cap</div>$<input class="fp-edit" data-cfield="cap" value="${r.plan.cap.toLocaleString('en-US')}" />${r.plan.cap > 0
+                ? ` → <input class="fp-edit" data-cfield="postCapAgentShare" value="${Math.round((1 - r.plan.postCapRate) * 100)}" />/${Math.round(r.plan.postCapRate * 100)}` : ''}</div>
+              <div><div class="fp-spec-label">Per Txn</div>$<input class="fp-edit" data-cfield="perTransaction" value="${r.plan.perTransaction}" /></div>
+      ` : `
               <div><div class="fp-spec-label">Split</div>${splitDisplay}</div>
               <div><div class="fp-spec-label">Plan Fee</div>$${r.plan.monthly}/mo</div>
               <div><div class="fp-spec-label">Cap</div>${fmt(r.plan.cap)} → ${postCapDisplay}</div>
               <div><div class="fp-spec-label">Per Txn</div>$${r.plan.perTransaction}</div>
-            </div>
+      `;
+      return `
+        <div class="funnel-plan ${isWinner ? 'winner' : ''} ${isChosen ? 'selected' : ''}" data-plan="${r.plan.key}">
+          ${isWinner ? '<div class="fp-winner-badge">Best Option</div>' : ''}
+          ${r.plan.editable ? '<button type="button" class="fp-remove" data-action="remove-custom" aria-label="Remove this plan">&times;</button>' : ''}
+          <div class="fp-header">
+            <h4 class="fp-name">${r.plan.editable
+              ? `<input class="fp-name-edit" data-cfield="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />`
+              : r.plan.name}</h4>
+            <div class="fp-specs">${specs}</div>
           </div>
           <div class="fp-body">
             <div class="fp-breakdown fp-breakdown-top">
@@ -2046,12 +2189,18 @@
               <div class="fp-net-label">Net to Agent</div>
             </div>
           </div>
+          <button type="button" class="fp-pick" data-action="pick">${isChosen ? 'Your plan' : 'Build my plan on this'}</button>
         </div>
       `;
     }).join('');
 
-    const winnerName = (cards.find(c => c.net === winnerNet) || { plan: {} }).plan.name || '';
-    return { volume: sharedVolume, gci: sharedGci, transactions: sharedTxn, net: winnerNet, winnerName };
+    const winnerName = (cards.find(c => !c.plan.editable && c.net === winnerNet) || { plan: {} }).plan.name || '';
+    const chosenCard = cards.find(c => c.plan.key === chosen.plan.key);
+    return {
+      volume: sharedVolume, gci: sharedGci, transactions: sharedTxn,
+      net: chosenCard ? chosenCard.net : winnerNet,
+      winnerName, chosenName: chosen.plan.name,
+    };
   }
 
   // ---------- Where one plan overtakes the other ----------
@@ -2088,13 +2237,18 @@
   // ---------- Money flow (hand-drawn Sankey) ----------
   // GCI is conserved: every dollar leaves through exactly one of the four
   // ends, so the ribbon widths add back up to the trunk.
-  const FLOW_H = 300, NODE_W = 13, PAD = 3;
+  const NODE_W = 13, PAD = 3;
   const isNarrow = () => window.matchMedia('(max-width: 600px)').matches;
+  const isWide = () => window.matchMedia('(min-width: 900px)').matches;
+  // The chart runs the full width of the page, so the viewBox widens with it
+  // rather than scaling one fixed drawing up and inflating the type with it.
   // Narrow drops the in-chart labels for an HTML legend underneath: a fixed
   // viewBox scaled to a phone shrinks SVG text into noise.
-  const flowGeom = () => isNarrow()
-    ? { W: 300, X1: 88, X2: 176, X3: 264, labels: false }
-    : { W: 720, X1: 150, X2: 300, X3: 450, labels: true };
+  function flowGeom() {
+    if (isNarrow()) return { W: 300, X1: 88, X2: 176, X3: 264, H: 300, labels: false };
+    if (isWide()) return { W: 1040, X1: 220, X2: 440, X3: 660, H: 340, labels: true };
+    return { W: 720, X1: 150, X2: 300, X3: 450, H: 300, labels: true };
+  }
 
   function ribbon(x1, x2, a0, a1, b0, b1) {
     const xm = (x1 + x2) / 2;
@@ -2111,7 +2265,7 @@
   // Drawing business costs and tax as siblings would say they come out of the
   // same pool at the same time, which is exactly the thing the 0% business rate
   // is there to teach against.
-  function renderFlow(gci, brokerage, business, tax, life, cushion) {
+  function renderFlow(gci, brokerage, business, tax, life, surplus) {
     const block = document.getElementById('flowBlock');
     if (!block) return;
     const kept = gci - brokerage;
@@ -2121,9 +2275,9 @@
 
     const g = flowGeom();
     const svg = document.getElementById('flowSvg');
-    svg.setAttribute('viewBox', '0 0 ' + g.W + ' ' + FLOW_H);
+    svg.setAttribute('viewBox', '0 0 ' + g.W + ' ' + g.H);
 
-    const top = 20, bottom = FLOW_H - 8;
+    const top = 20, bottom = g.H - 8;
     const usable = bottom - top - PAD * 3;
     const scale = usable / gci;
     const h = (v) => v * scale;
@@ -2139,7 +2293,7 @@
     // tax dropping out the bottom, matching how the earlier cuts are drawn.
     const finals = [
       { name: 'Your life', value: life, fill: RED },
-      { name: 'Cushion', value: cushion, fill: AMBER },
+      { name: 'Surplus', value: surplus, fill: AMBER },
       { name: 'Tax', value: tax, fill: STONE },
     ].filter(e => e.value > 0.5);
 
@@ -2197,12 +2351,21 @@
 
     document.getElementById('flowHeadline').innerHTML =
       'You bring in <strong>' + fmt(gci) + '</strong> in commission. '
-      + '<strong>' + fmt(life + cushion) + '</strong> of it reaches your pocket.';
+      + '<strong>' + fmt(life + surplus) + '</strong> of it reaches your pocket.';
+    // Every band is shown as a share of GCI, so the widths and the percentages
+    // agree. Tax therefore reads lower here than the rate entered above, which
+    // applies only to the taxed-on column. Say so, rather than leaving two
+    // different-looking tax percentages on one page.
+    const taxPct = Math.round(100 * tax / gci);
     document.getElementById('flowDesc').textContent =
       'Read it left to right, in the order the money actually leaves. The brokerage '
       + 'takes its cut first, then your business costs come out of what you keep. '
-      + 'Neither one is taxed. Tax is figured on what is left after both. Cushion is '
-      + 'what the extra whole deal leaves over, after tax.';
+      + 'Neither one is taxed. Tax is figured on what is left after both. Surplus is '
+      + 'what the extra whole deal leaves over, after tax. '
+      + 'Every percentage here is a share of your gross commission, which is why tax reads '
+      + taxPct + '% rather than the ' + state.personalTaxRate + '% you entered: that rate is '
+      + 'charged on the ' + fmt(taxable) + ' left after the brokerage and your business costs, '
+      + 'not on the whole ' + fmt(gci) + '.';
   }
 
   // ---------- What the year has to cover ----------
@@ -2224,7 +2387,22 @@
     };
   }
 
+  // A step's ? holds the operation that produced its number: the formula on
+  // one line, the answer on the next.
+  function setTooltip(id, formula, result) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<span class="tt-formula">' + formula + '</span>'
+      + '<span class="tt-result">' + result + '</span>';
+  }
+
   // ---------- Recompute everything ----------
+  // What the funnel last produced, so the share link can carry it to the
+  // comparison page without recomputing it there.
+  let lastResult = { volume: 0, transactions: 0 };
+  // How far down the funnel the reader has walked. Not part of the plan, so it
+  // is not saved and does not travel in a link.
+  let revealed = 1;
   function recompute() {
     const { personalAnnual, businessAnnual, otherAnnual } = needs();
     // Other income is already after tax, so it comes off the personal need
@@ -2245,6 +2423,7 @@
     // Render the 2 RE/MAX plan cards embedded in the funnel, and grab the
     // best plan's required volume for the bottom tier.
     const best = renderFunnelPlans(grossedUp, state.commissionRate, avgPrice);
+    lastResult = best;
     const requiredVolume = best.volume;
     const totalTransactions = best.transactions;
 
@@ -2283,13 +2462,21 @@
     const isEmpty = !(grossedUp > 0) || totalTransactions <= 0;
     document.getElementById('emptyNote').hidden = !isEmpty;
 
-    // The operation each arrow performs
-    document.getElementById('opGross').textContent = isEmpty ? '' :
-      'personal share ÷ (1 − ' + state.personalTaxRate + '% tax), business added as-is';
-    document.getElementById('opVolume').textContent = isEmpty ? '' :
-      fmt(best.gci) + ' GCI ÷ ' + state.commissionRate + '% commission';
-    document.getElementById('opDeals').textContent = isEmpty ? '' :
-      '÷ ' + fmt(avgPrice) + ' average sale, rounded up to a whole deal';
+    // The math for each step, behind that step's ?
+    setTooltip('needTooltip',
+      fmt(personalAnnual) + ' personal'
+        + (otherAnnual > 0 ? ' − ' + fmt(otherAnnual) + ' other income' : '')
+        + ' + ' + fmt(businessAnnual) + ' business',
+      '= ' + fmt(minimumIncome) + ' real estate has to cover');
+    setTooltip('grossTooltip',
+      fmt(personalToEarn) + ' personal ÷ (1 − ' + state.personalTaxRate + '% tax) = '
+        + fmt(personalGrossed) + ', plus ' + fmt(businessAnnual)
+        + ' of business costs, which are written off rather than grossed up',
+      '= ' + fmt(grossedUp) + ' before tax');
+    setTooltip('dealsTooltip',
+      fmt(requiredVolume) + ' volume ÷ ' + fmt(avgPrice)
+        + ' average sale, rounded up to a whole deal',
+      '= ' + totalTransactions + (totalTransactions === 1 ? ' deal' : ' deals') + ' a year');
 
     // Why the plan cards show a bigger number than the tier above them
     const solveNote = document.getElementById('solveNote');
@@ -2312,13 +2499,13 @@
 
     // The closing answer card
     const summary = document.getElementById('planSummary');
-    if (isEmpty || !best.winnerName) {
+    if (isEmpty || !(best.chosenName || best.winnerName)) {
       summary.hidden = true;
     } else {
       summary.hidden = false;
       document.getElementById('psDeals').textContent =
         totalTransactions + (totalTransactions === 1 ? ' deal' : ' deals') + ' a year';
-      document.getElementById('psPlanName').textContent = 'on the ' + best.winnerName;
+      document.getElementById('psPlanName').textContent = 'on ' + withArticle(best.chosenName || best.winnerName);
       const pace = cadenceText(totalTransactions).split(' · ')[0]
         .replace(/^About /, '').replace(/^one/, '1').replace(' weeks', ' wks').replace(' week', ' wk');
       document.getElementById('psPace').textContent = pace;
@@ -2377,9 +2564,14 @@
     document.getElementById('goalTakeHome').value = state.goalTakeHome.toLocaleString('en-US');
     document.getElementById('simpleBusiness').value = state.simpleBusiness.toLocaleString('en-US');
     document.getElementById('simpleOtherIncome').value = state.simpleOtherIncome.toLocaleString('en-US');
+    const search = document.getElementById('agentSearch');
+    if (search) search.value = state.agentName || '';
     applyMode();
   }
 
+  // The number under the slider explains where the sale price came from: the
+  // matched agent's own 2025 record when there is one, the area median when
+  // there is not.
   function renderAvgPriceNote() {
     const el = document.getElementById('avgPriceNote');
     if (!el) return;
@@ -2387,12 +2579,30 @@
     // No roster loaded means no reference to give, so drop the note entirely.
     if (!prices.length) { el.remove(); return; }
     const money = n => '$' + toStep(n).toLocaleString('en-US');
-    el.textContent = `Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
-      + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
-      + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
+    const loaded = document.getElementById('agentLoaded');
+    const agent = state.agentName
+      ? agents.find(a => a.name === state.agentName && a.units > 0)
+      : null;
+    if (loaded) {
+      loaded.hidden = !agent;
+      loaded.innerHTML = agent
+        ? `<span>Matched to ${agent.name}: ${agent.units} units, ${fmt(agent.volume)} in 2025 MLS volume.</span>`
+          + '<button type="button" class="al-clear">Use the area median instead</button>'
+        : '';
+    }
+    el.textContent = agent
+      ? `${agent.name}'s own average sale price in 2025 was ${money(agent.volume / agent.units)}. `
+        + `The middle agent across ${prices.length.toLocaleString('en-US')} Dayton area agents was ${money(percentile(prices, 0.5))}.`
+      : `No agent matched, so this is the area median. Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
+        + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
+        + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
   }
 
-  loadState();
+  // A link the user was sent describes a specific plan, so it outranks
+  // whatever this browser happens to have saved.
+  const shared = Share.read();
+  const restored = Share.adopt(state, shared.p) || loadState();
+  Share.carryIntoLinks();
   renderAvgPriceNote();
   syncInputs();
   recompute();
@@ -2506,10 +2716,12 @@
   // Business side is fixed at 0% on purpose: expenses are deducted before tax,
   // so a dollar of expense needs exactly a dollar of revenue. No slider to get wrong.
 
-  (function bindVolumeTooltip() {
-    const info = document.getElementById('volumeInfo');
+  // Every step's math sits behind its own ?. Click as well as hover, because
+  // hover does not exist on a phone.
+  function bindInfo(infoId, tipId) {
+    const info = document.getElementById(infoId);
     const tier = info && info.closest('.funnel-tier');
-    const tip = document.getElementById('volumeTooltip');
+    const tip = document.getElementById(tipId);
     if (!info || !tier || !tip) return;
     function position() {
       const tr = tier.getBoundingClientRect();
@@ -2523,7 +2735,97 @@
     info.addEventListener('mouseleave', hide);
     info.addEventListener('focus', show);
     info.addEventListener('blur', hide);
-  })();
+    info.addEventListener('click', (e) => {
+      e.stopPropagation();
+      tier.classList.contains('show-tooltip') ? hide() : show();
+    });
+    info.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(); }
+    });
+  }
+  bindInfo('needInfo', 'needTooltip');
+  bindInfo('grossInfo', 'grossTooltip');
+  bindInfo('volumeInfo', 'volumeTooltip');
+  bindInfo('dealsInfo', 'dealsTooltip');
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.funnel-tier.show-tooltip').forEach(t => t.classList.remove('show-tooltip'));
+  });
+
+  // ---------- Progressive reveal ----------
+  // The funnel is a walk, so it opens one step at a time. The arrow beneath the
+  // last visible step is the control that opens the next one.
+  const REVEAL_STEPS = [
+    ['.funnel-tier.t1'],
+    ['.tax-rate-card'],
+    ['.funnel-tier.t2'],
+    ['#solveNote', '#funnelPlans', '#customAdd', '#crossoverNote'],
+    ['.commission-card'],
+    ['.funnel-tier.t3'],
+    ['.avg-price-card'],
+    ['.funnel-tier.t4', '#surplusNote', '#planSummary', '#flowBlock'],
+  ];
+  const REVEAL_LABELS = [
+    'What tax does to that number',
+    'What you have to earn before tax',
+    'Compare the plans',
+    'Set your commission rate',
+    'The volume you have to sell',
+    'Set your average sale price',
+    'How many deals that is',
+  ];
+  const gates = [...document.querySelectorAll('.funnel .funnel-flow')];
+  const stepEls = REVEAL_STEPS.map(sel => sel.flatMap(x => [...document.querySelectorAll(x)]));
+
+  function applyReveal() {
+    stepEls.forEach((els, i) => {
+      els.forEach(el => el.classList.toggle('is-locked', i + 1 > revealed));
+    });
+    gates.forEach((gate, i) => {
+      const stepBelow = i + 2;                  // the step this arrow opens
+      const isActive = stepBelow === revealed + 1;
+      gate.classList.toggle('is-locked', stepBelow > revealed + 1);
+      gate.classList.toggle('gate-active', isActive);
+      let label = gate.querySelector('.gate-label');
+      let all = gate.querySelector('.gate-all');
+      if (isActive) {
+        if (!label) {
+          label = document.createElement('button');
+          label.type = 'button';
+          label.className = 'gate-label';
+          gate.appendChild(label);
+        }
+        label.textContent = REVEAL_LABELS[i] || 'Show the next step';
+        if (!all) {
+          all = document.createElement('button');
+          all.type = 'button';
+          all.className = 'gate-all';
+          all.textContent = 'Show everything';
+          gate.appendChild(all);
+        }
+      } else {
+        if (label) label.remove();
+        if (all) all.remove();
+      }
+    });
+  }
+
+  function revealNext(toEnd) {
+    revealed = toEnd ? REVEAL_STEPS.length : Math.min(revealed + 1, REVEAL_STEPS.length);
+    applyReveal();
+    const target = stepEls[revealed - 1][0];
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  gates.forEach(gate => {
+    gate.addEventListener('click', (e) => {
+      if (!gate.classList.contains('gate-active')) return;
+      revealNext(!!e.target.closest('.gate-all'));
+    });
+  });
+  // Someone opening a shared link, or coming back to a saved plan, has already
+  // walked the funnel. Only a first visit starts at the top.
+  if (restored) revealed = REVEAL_STEPS.length;
+  applyReveal();
   // ---------- Mode toggle ----------
   function applyMode() {
     document.getElementById('simplePanel').hidden = state.mode !== 'simple';
@@ -2559,13 +2861,16 @@
     });
   }
   document.querySelector('.mt-btn[data-mode="simple"]').addEventListener('click', () => {
-    seedSimpleFromDetailed();
+    // Take-home is the default way in, so numbers the user typed here outrank
+    // the itemised lists they may have opened out of curiosity.
+    if (!state.simpleEdited) seedSimpleFromDetailed();
     recompute();
   });
   ['goalTakeHome', 'simpleBusiness', 'simpleOtherIncome'].forEach(id => {
     document.getElementById(id).addEventListener('input', (e) => {
       formatWithCommas(e.target);
       state[id] = Number(e.target.value.replace(/,/g, '')) || 0;
+      state.simpleEdited = true;
       recompute();
     });
   });
@@ -2584,6 +2889,184 @@
   window.addEventListener('resize', () => {
     clearTimeout(flowResizeTimer);
     flowResizeTimer = setTimeout(recompute, 150);
+  });
+
+  // ---------- Picking a plan, and the agent's current plan ----------
+  const funnelPlansEl = document.getElementById('funnelPlans');
+  funnelPlansEl.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="remove-custom"]')) {
+      state.showCustomPlan = false;
+      if (state.selectedPlan === 'custom') state.selectedPlan = '';
+      recompute();
+      document.getElementById('btnAddCustom').focus();
+      return;
+    }
+    // Anywhere on the card picks it, but not while editing the custom fields
+    if (e.target.closest('.fp-edit, .fp-name-edit')) return;
+    const card = e.target.closest('.funnel-plan');
+    if (!card) return;
+    state.selectedPlan = card.dataset.plan;
+    state.touched = true;
+    recompute();
+  });
+
+  funnelPlansEl.addEventListener('input', (e) => {
+    const field = e.target.dataset.cfield;
+    if (!field) return;
+    const cp = state.customPlan;
+    if (field === 'name') {
+      cp.name = e.target.value;
+      return;
+    }
+    const raw = Number(e.target.value.replace(/,/g, '')) || 0;
+    if (field === 'agentShare') {
+      cp.splitRate = Math.max(0, Math.min(100, 100 - raw)) / 100;
+    } else if (field === 'postCapAgentShare') {
+      cp.postCapRate = Math.max(0, Math.min(100, 100 - raw)) / 100;
+    } else {
+      cp[field] = raw;
+    }
+    // With no cap the agent is past it from the first dollar, so the post-cap
+    // rate is the one that bites and the visible Split has to match it.
+    if (cp.cap === 0) cp.postCapRate = cp.splitRate;
+    const caret = e.target.selectionStart;
+    recompute();
+    const fresh = funnelPlansEl.querySelector(`[data-cfield="${field}"]`);
+    if (fresh) { fresh.focus(); try { fresh.setSelectionRange(caret, caret); } catch (err) {} }
+  });
+
+  document.getElementById('btnAddCustom').addEventListener('click', () => {
+    state.showCustomPlan = true;
+    state.touched = true;
+    recompute();
+    const nameEl = funnelPlansEl.querySelector('.fp-name-edit');
+    if (nameEl) nameEl.focus();
+  });
+
+  // ---------- Agent search: use the agent's own average sale price ----------
+  const searchEl = document.getElementById('agentSearch');
+  const resultsEl = document.getElementById('agentResults');
+  const loadedEl = document.getElementById('agentLoaded');
+  let activeIndex = -1;
+
+  function filterAgents(q) {
+    q = q.trim().toLowerCase();
+    const sorted = [...agents].filter(a => a.units > 0 && a.volume > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return q ? sorted.filter(a => a.name.toLowerCase().includes(q)) : sorted;
+  }
+
+  function renderResults(matches) {
+    resultsEl.innerHTML = matches.length
+      ? matches.slice(0, 50).map((a, i) => `
+          <div class="agent-result${i === activeIndex ? ' active' : ''}" data-index="${i}">
+            <span class="ar-name">${a.name}</span>
+            <span class="ar-stats">${fmt(a.volume / a.units)} average sale</span>
+          </div>`).join('')
+      : '<div class="agent-result"><span class="ar-empty">No matches</span></div>';
+    resultsEl.classList.add('open');
+  }
+
+  function setAvgPrice(value) {
+    state.avgPrice = value;
+    const slider = document.getElementById('avgPriceSlider');
+    const min = Number(slider.min);
+    slider.max = String(Math.max(min + 2 * (value - min), value));
+    slider.value = String(value);
+    document.getElementById('avgPrice').value = value.toLocaleString('en-US');
+  }
+
+  function selectAgent(agent) {
+    state.agentName = agent.name;
+    state.touched = true;
+    setAvgPrice(toStep(agent.volume / agent.units));
+    searchEl.value = agent.name;
+    resultsEl.classList.remove('open');
+    renderAvgPriceNote();
+    recompute();
+  }
+
+  function clearAgent() {
+    state.agentName = '';
+    setAvgPrice(medianAvgPrice());
+    searchEl.value = '';
+    renderAvgPriceNote();
+    recompute();
+  }
+
+  searchEl.addEventListener('input', () => { activeIndex = -1; renderResults(filterAgents(searchEl.value)); });
+  searchEl.addEventListener('focus', () => { activeIndex = -1; renderResults(filterAgents(searchEl.value)); });
+  searchEl.addEventListener('keydown', (e) => {
+    const matches = filterAgents(searchEl.value);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault(); activeIndex = Math.min(activeIndex + 1, matches.length - 1); renderResults(matches);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); renderResults(matches);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const pick = matches[activeIndex >= 0 ? activeIndex : 0];
+      if (pick) selectAgent(pick);
+    } else if (e.key === 'Escape') {
+      resultsEl.classList.remove('open');
+    }
+  });
+  resultsEl.addEventListener('click', (e) => {
+    const item = e.target.closest('.agent-result');
+    if (!item || item.dataset.index === undefined) return;
+    const pick = filterAgents(searchEl.value)[Number(item.dataset.index)];
+    if (pick) selectAgent(pick);
+  });
+  loadedEl.addEventListener('click', (e) => {
+    if (e.target.closest('.al-clear')) clearAgent();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.agent-search')) resultsEl.classList.remove('open');
+  });
+
+  // ---------- One link that carries both pages ----------
+  // The comparison page needs the production numbers this plan produced, so
+  // the payload holds the plan builder's state and the inputs that page asks
+  // for. Opening the link on either page lands on the same scenario.
+  const MLS_LABEL = 'MLS dues';
+  // Only what differs from the defaults travels, so a take-home-goal plan is a
+  // short link instead of twenty expense lines nobody edited.
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  function sharePayload() {
+    const best = lastResult;
+    const mlsLine = state.business.find(x => x.label === MLS_LABEL);
+    const p = {
+      mode: state.mode, goalTakeHome: state.goalTakeHome, simpleBusiness: state.simpleBusiness,
+      simpleOtherIncome: state.simpleOtherIncome, simpleEdited: state.simpleEdited,
+      personalTaxRate: state.personalTaxRate, commissionRate: state.commissionRate,
+      avgPrice: state.avgPrice, agentName: state.agentName,
+      selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
+      touched: true,
+    };
+    ['personal', 'business', 'income'].forEach(g => {
+      if (!same(state[g], DEFAULTS[g])) p[g] = state[g];
+    });
+    if (state.showCustomPlan) p.customPlan = state.customPlan;
+    return {
+      v: 1,
+      p: p,
+      i: {
+        volume: Math.round(best.volume || 0),
+        transactions: best.transactions || 0,
+        commissionRate: state.commissionRate,
+        mls: mlsLine ? Number(mlsLine.amount) || 0 : 0,
+        showCustom: state.showCustomPlan,
+        customPlan: state.customPlan,
+      },
+    };
+  }
+
+  document.getElementById('btnCopyLink').addEventListener('click', () => {
+    const url = Share.write(sharePayload());
+    Share.carryIntoLinks();
+    Share.copy(url).then(ok => {
+      setSaveStatus(ok ? 'Link copied' : 'Could not copy, the link is in the address bar');
+      setTimeout(() => saveState(), 4000);
+    });
   });
 
   // ---------- Toolbar ----------
@@ -2607,6 +3090,7 @@
     state.personalTaxRate = DEFAULTS.personalTaxRate;
     state.commissionRate = DEFAULTS.commissionRate;
     state.avgPrice = DEFAULTS.avgPrice;
+    state.simpleEdited = true;
     state.touched = true;
     syncInputs();
     recompute();

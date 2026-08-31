@@ -510,6 +510,7 @@
 </div>
 
 <script src="fee-math.js"></script>
+<script src="share.js"></script>
 <script src="agents-embed.js"></script>
 <script>
   const currentPlan = {
@@ -641,6 +642,7 @@
 
   document.getElementById('btnAddCustom').addEventListener('click', () => {
     showCustom = true;
+    updateShare();
     render();
     const nameEl = document.querySelector('.name-edit');
     if (nameEl) nameEl.focus();
@@ -649,6 +651,7 @@
   document.getElementById('plans').addEventListener('click', (e) => {
     if (!e.target.closest('#btnRemoveCustom')) return;
     showCustom = false;
+    updateShare();
     render();
     document.getElementById('btnAddCustom').focus();
   });
@@ -678,6 +681,40 @@
     const fresh = document.querySelector(`[data-field="${field}"]`);
     if (fresh) { fresh.focus(); fresh.setSelectionRange(caret, caret); }
   });
+  // --- A link from the business plan builder ---
+  // The builder solves for volume and deal count; arriving with those already
+  // filled in is the whole point of the link.
+  const shared = Share.read();
+  if (shared.i) {
+    const i = shared.i;
+    const set = (id, v) => { document.getElementById(id).value = Number(v).toLocaleString('en-US'); };
+    if (i.volume > 0) set('volume', i.volume);
+    if (i.transactions > 0) set('transactions', i.transactions);
+    if (i.mls >= 0) set('mls', i.mls);
+    if (i.commissionRate > 0) document.getElementById('commissionRate').value = String(i.commissionRate);
+    if (i.customPlan && typeof i.customPlan === 'object') Object.assign(currentPlan, i.customPlan);
+    showCustom = i.showCustom === true;
+  }
+  Share.carryIntoLinks();
+
+  // Keep the link in the address bar describing what is on screen, so copying
+  // it from here carries the edits made here. The builder's half rides along
+  // untouched.
+  function updateShare() {
+    if (!shared.i) return;
+    shared.i = {
+      volume: readNum('volume'),
+      transactions: readNum('transactions'),
+      commissionRate: Number(document.getElementById('commissionRate').value) || 0,
+      mls: readNum('mls'),
+      showCustom: showCustom,
+      customPlan: currentPlan,
+    };
+    Share.write(shared);
+    Share.carryIntoLinks();
+  }
+  document.querySelector('.container').addEventListener('input', updateShare);
+
   updateAvgPrice();
   render();
 
