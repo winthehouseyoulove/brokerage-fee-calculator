@@ -2662,7 +2662,7 @@
       loaded.hidden = !agent;
       loaded.innerHTML = agent
         ? `<span class="al-name">${agent.name}</span>`
-          + `<span class="al-stat"><b>${agent.units}</b> units</span>`
+          + `<span class="al-stat"><b>${agent.units}</b> ${agent.units === 1 ? 'unit' : 'units'}</span>`
           + `<span class="al-stat"><b>${fmt(agent.volume)}</b> volume</span>`
           + `<span class="al-stat"><b>${money(agent.volume / agent.units)}</b> average sale</span>`
           + '<span class="al-stat">2025 MLS</span>'
@@ -2751,7 +2751,7 @@
     el.style.width = (Math.max(1, el.value.length) + (pad || 0)) + 'ch';
   }
   function sizeRateInputs() {
-    ['personalTaxRate', 'commissionRate'].forEach(id => sizeToContent(document.getElementById(id), 0.2));
+    ['personalTaxRate', 'commissionRate'].forEach(id => sizeToContent(document.getElementById(id)));
   }
 
   function bindTaxRate(field, inputId, sliderId, tooltipId, side) {
@@ -2783,7 +2783,7 @@
     input.addEventListener('input', (e) => {
       state[field] = Number(e.target.value) || 0;
       slider.value = String(state[field]);
-      sizeToContent(input, 0.2);
+      sizeToContent(input);
       recompute();
       showTooltip();
       scheduleHide();
@@ -2791,7 +2791,7 @@
     slider.addEventListener('input', (e) => {
       state[field] = Number(e.target.value) || 0;
       input.value = String(state[field]);
-      sizeToContent(input, 0.2);
+      sizeToContent(input);
       recompute();
       showTooltip();
     });
@@ -3196,12 +3196,12 @@
   document.getElementById('commissionSlider').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
     document.getElementById('commissionRate').value = String(state.commissionRate);
-    sizeToContent(document.getElementById('commissionRate'), 0.2);
+    sizeToContent(document.getElementById('commissionRate'));
     recompute();
   });
   document.getElementById('commissionRate').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
-    sizeToContent(e.target, 0.2);
+    sizeToContent(e.target);
     const slider = document.getElementById('commissionSlider');
     if (state.commissionRate >= Number(slider.min) && state.commissionRate <= Number(slider.max)) {
       slider.value = String(state.commissionRate);
