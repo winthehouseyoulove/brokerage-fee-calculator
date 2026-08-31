@@ -866,7 +866,7 @@
   .trc-col + .trc-col { border-left: 1px solid var(--border); }
   .trc-col .apc-input { display: flex; align-items: baseline; gap: 4px; }
   .trc-col .apc-input input {
-    flex: 1;
+    flex: 0 0 auto;
     border: none;
     outline: none;
     background: transparent;
@@ -876,7 +876,7 @@
     padding: 0;
     font-variant-numeric: tabular-nums;
     height: auto;
-    width: 100%;
+    width: 2.5ch;
     min-width: 0;
   }
   .trc-col .apc-suffix {
@@ -1121,11 +1121,40 @@
   /* The agent search sits inside the average sale price card */
   .apc-agent { margin: 0 0 12px; padding: 0; }
   .apc-agent input { height: 38px; font-size: 14px; }
-  .apc-agent .agent-loaded { display: flex; gap: 8px; align-items: baseline; }
-  .apc-agent .al-clear {
-    background: none; border: none; padding: 0; cursor: pointer;
-    color: var(--muted); font-size: 12px; text-decoration: underline;
+  .agent-input { position: relative; }
+  .agent-input input { padding-right: 34px; }
+  .agent-clear {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--muted);
+    cursor: pointer;
   }
+  .agent-clear:hover { color: var(--remax-red); }
+
+  /* What the matched agent actually did, as figures rather than a sentence */
+  .apc-agent .agent-loaded {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+    margin-top: 8px;
+    color: var(--text);
+  }
+  .al-name { font-size: 13px; font-weight: 700; }
+  .al-stat { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .al-stat b { color: var(--text); font-weight: 700; }
 
   /* Picking a plan drives the funnel and the money flow below it */
   .funnel-plan { cursor: pointer; }
@@ -1166,12 +1195,38 @@
     color: inherit; font: inherit; font-size: 15px; font-weight: 700; padding: 0; width: 100%;
   }
   .fp-name-edit:focus { outline: none; border-bottom-color: #fff; }
+  /* Reads as an empty third card waiting to be filled, not as fine print */
   .custom-add { width: 100%; max-width: 720px; margin: 12px 0 0; }
   .custom-add button {
-    width: 100%; background: none; border: 1px dashed var(--border);
-    color: var(--muted); padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    background: #ece8d9;
+    border: 2px solid #d8d2bd;
+    color: var(--remax-blue);
+    padding: 14px 18px;
+    font-family: inherit;
+    cursor: pointer;
   }
-  .custom-add button:hover { border-color: var(--remax-blue); color: var(--remax-blue); }
+  .custom-add button:hover { background: var(--card); border-color: var(--remax-blue); }
+  .ca-plus {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--remax-blue);
+    color: var(--bg);
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .ca-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .ca-text b { font-size: 14px; font-weight: 700; }
+  .ca-text small { font-size: 12px; color: var(--muted); }
   .funnel-plan {
     background: var(--card);
     border: 2px solid var(--border);
@@ -1811,7 +1866,13 @@
         <!-- Embedded RE/MAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
         <div class="custom-add" id="customAdd">
-          <button type="button" id="btnAddCustom">+ Compare against the plan you pay today</button>
+          <button type="button" id="btnAddCustom">
+            <span class="ca-plus">+</span>
+            <span class="ca-text">
+              <b>Add the plan you pay today</b>
+              <small>Compare both RE/MAX plans against your current brokerage.</small>
+            </span>
+          </button>
         </div>
         <p class="funnel-note" id="crossoverNote"></p>
 
@@ -1854,7 +1915,10 @@
         <div class="avg-price-card">
           <div class="apc-label">Average Sale Price</div>
           <div class="agent-search apc-agent">
-            <input type="text" id="agentSearch" placeholder="Search your name to use your own average sale price" autocomplete="off" />
+            <div class="agent-input">
+              <input type="text" id="agentSearch" placeholder="Search your name to use your own average sale price" autocomplete="off" />
+              <button type="button" class="agent-clear" id="agentClear" aria-label="Clear the matched agent" hidden>&times;</button>
+            </div>
             <div class="agent-results" id="agentResults"></div>
             <div class="agent-loaded" id="agentLoaded" hidden></div>
           </div>
@@ -2574,6 +2638,7 @@
     document.getElementById('simpleOtherIncome').value = state.simpleOtherIncome.toLocaleString('en-US');
     const search = document.getElementById('agentSearch');
     if (search) search.value = state.agentName || '';
+    sizeRateInputs();
     applyMode();
   }
 
@@ -2588,22 +2653,27 @@
     if (!prices.length) { el.remove(); return; }
     const money = n => '$' + toStep(n).toLocaleString('en-US');
     const loaded = document.getElementById('agentLoaded');
+    const clear = document.getElementById('agentClear');
     const agent = state.agentName
       ? agents.find(a => a.name === state.agentName && a.units > 0)
       : null;
+    if (clear) clear.hidden = !agent;
     if (loaded) {
       loaded.hidden = !agent;
       loaded.innerHTML = agent
-        ? `<span>Matched to ${agent.name}: ${agent.units} units, ${fmt(agent.volume)} in 2025 MLS volume.</span>`
-          + '<button type="button" class="al-clear">Use the area median instead</button>'
+        ? `<span class="al-name">${agent.name}</span>`
+          + `<span class="al-stat"><b>${agent.units}</b> units</span>`
+          + `<span class="al-stat"><b>${fmt(agent.volume)}</b> volume</span>`
+          + `<span class="al-stat"><b>${money(agent.volume / agent.units)}</b> average sale</span>`
+          + '<span class="al-stat">2025 MLS</span>'
         : '';
     }
-    el.textContent = agent
-      ? `${agent.name}'s own average sale price in 2025 was ${money(agent.volume / agent.units)}. `
-        + `The middle agent across ${prices.length.toLocaleString('en-US')} Dayton area agents was ${money(percentile(prices, 0.5))}.`
-      : `No agent matched, so this is the area median. Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
-        + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
-        + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
+    // The agent's own figures are in the line above, so this stays the market
+    // reference and does not say the same thing twice.
+    el.textContent = (agent ? '' : 'No agent matched, so this starts at the area median. ')
+      + `Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
+      + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
+      + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
   }
 
   // A link the user was sent describes a specific plan, so it outranks
@@ -2674,6 +2744,16 @@
   });
 
   // ---------- Step 3, 4, 5, 6 controls ----------
+  // A rate field is only as wide as the number in it, so the % beside it is
+  // never left floating at the edge of the card.
+  function sizeToContent(el, pad) {
+    if (!el) return;
+    el.style.width = (Math.max(1, el.value.length) + (pad || 0)) + 'ch';
+  }
+  function sizeRateInputs() {
+    ['personalTaxRate', 'commissionRate'].forEach(id => sizeToContent(document.getElementById(id), 0.2));
+  }
+
   function bindTaxRate(field, inputId, sliderId, tooltipId, side) {
     const input = document.getElementById(inputId);
     const slider = document.getElementById(sliderId);
@@ -2703,6 +2783,7 @@
     input.addEventListener('input', (e) => {
       state[field] = Number(e.target.value) || 0;
       slider.value = String(state[field]);
+      sizeToContent(input, 0.2);
       recompute();
       showTooltip();
       scheduleHide();
@@ -2710,6 +2791,7 @@
     slider.addEventListener('input', (e) => {
       state[field] = Number(e.target.value) || 0;
       input.value = String(state[field]);
+      sizeToContent(input, 0.2);
       recompute();
       showTooltip();
     });
@@ -2960,7 +3042,6 @@
   // ---------- Agent search: use the agent's own average sale price ----------
   const searchEl = document.getElementById('agentSearch');
   const resultsEl = document.getElementById('agentResults');
-  const loadedEl = document.getElementById('agentLoaded');
   let activeIndex = -1;
 
   function filterAgents(q) {
@@ -3030,8 +3111,10 @@
     const pick = filterAgents(searchEl.value)[Number(item.dataset.index)];
     if (pick) selectAgent(pick);
   });
-  loadedEl.addEventListener('click', (e) => {
-    if (e.target.closest('.al-clear')) clearAgent();
+  document.getElementById('agentClear').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearAgent();
+    searchEl.focus();
   });
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.agent-search')) resultsEl.classList.remove('open');
@@ -3113,10 +3196,12 @@
   document.getElementById('commissionSlider').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
     document.getElementById('commissionRate').value = String(state.commissionRate);
+    sizeToContent(document.getElementById('commissionRate'), 0.2);
     recompute();
   });
   document.getElementById('commissionRate').addEventListener('input', (e) => {
     state.commissionRate = Number(e.target.value) || 0;
+    sizeToContent(e.target, 0.2);
     const slider = document.getElementById('commissionSlider');
     if (state.commissionRate >= Number(slider.min) && state.commissionRate <= Number(slider.max)) {
       slider.value = String(state.commissionRate);

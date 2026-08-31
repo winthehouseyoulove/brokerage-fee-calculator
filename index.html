@@ -212,20 +212,59 @@
     letter-spacing: 0.5px;
     margin-top: 2px;
   }
-  .input-with-suffix {
+  /* A currency or percent sign sits against the number it belongs to, not at
+     the far edge of the field. The input is sized to what is typed. */
+  .input-with-suffix,
+  .input-with-prefix {
     display: flex;
     align-items: baseline;
+    min-width: 0;
   }
   .input-with-suffix input {
     flex: 0 0 auto;
     width: 3.5ch;
     padding-right: 0;
   }
-  .input-with-suffix .suffix {
+  .input-with-prefix input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+  }
+  .affix {
     font-size: 16px;
     color: var(--text);
-    margin-left: 1px;
+    flex: none;
   }
+  .input-with-suffix .affix { margin-left: 1px; }
+  .input-with-prefix .affix { margin-right: 2px; }
+  .input-with-prefix.is-readonly .affix { color: #9ca3af; }
+
+  /* The full-width money fields carry the border on the wrapper instead */
+  .money-field {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 52px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--field-bg);
+    transition: border-color 0.15s;
+  }
+  .money-field:focus-within {
+    border-color: var(--remax-blue);
+    background: var(--field-bg-focus);
+  }
+  .money-field input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+  .money-field input:focus { outline: none; background: transparent; }
   .help {
     font-size: 12px;
     color: var(--muted);
@@ -283,24 +322,40 @@
     box-shadow: -1px 1px 4px rgba(0,0,0,0.08);
   }
   .plan-remove:hover { color: var(--win-text); }
-  .custom-add {
-    margin: 0 0 24px;
-    text-align: center;
-  }
+  /* Reads as an empty third card waiting to be filled, not as fine print */
+  .custom-add { margin: 0 0 24px; }
   .custom-add button {
-    background: none;
-    border: 1px dashed var(--border);
-    color: var(--muted);
-    padding: 12px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
     width: 100%;
+    text-align: left;
+    background: #ece8d9;
+    border: 2px solid #d8d2bd;
+    color: var(--remax-blue);
+    padding: 16px 20px;
+    cursor: pointer;
   }
   .custom-add button:hover {
+    background: var(--card);
     border-color: var(--remax-blue);
-    color: var(--remax-blue);
   }
+  .ca-plus {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--remax-blue);
+    color: var(--bg);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .ca-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .ca-text b { font-size: 15px; font-weight: 700; }
+  .ca-text small { font-size: 12px; color: var(--muted); }
   .plan-header {
     padding: 20px;
     color: var(--bg);
@@ -471,7 +526,10 @@
     <div class="input-grid">
       <div class="field">
         <label for="volume">Annual Volume</label>
-        <input type="text" inputmode="numeric" id="volume" value="5,000,000" />
+        <div class="money-field">
+          <span class="affix">$</span>
+          <input type="text" inputmode="numeric" id="volume" value="5,000,000" />
+        </div>
       </div>
       <div class="field">
         <label>Transactions & Avg Sale Price</label>
@@ -481,7 +539,10 @@
             <span class="sub">Transactions / yr</span>
           </div>
           <div class="half">
-            <input type="text" id="avgPrice" value="250,000" readonly tabindex="-1" />
+            <div class="input-with-prefix is-readonly">
+              <span class="affix">$</span>
+              <input type="text" id="avgPrice" value="250,000" readonly tabindex="-1" />
+            </div>
             <span class="sub">Avg sale price</span>
           </div>
         </div>
@@ -492,12 +553,15 @@
           <div class="half">
             <div class="input-with-suffix">
               <input type="text" inputmode="decimal" id="commissionRate" value="3" />
-              <span class="suffix">%</span>
+              <span class="affix">%</span>
             </div>
             <span class="sub">Avg commission</span>
           </div>
           <div class="half">
-            <input type="text" inputmode="numeric" id="mls" value="50" />
+            <div class="input-with-prefix">
+              <span class="affix">$</span>
+              <input type="text" inputmode="numeric" id="mls" value="50" />
+            </div>
             <span class="sub">MLS fees / mo</span>
           </div>
         </div>
@@ -508,7 +572,13 @@
   <div class="plans" id="plans"></div>
 
   <div class="custom-add" id="customAdd">
-    <button type="button" id="btnAddCustom">+ Compare against the plan you pay today</button>
+    <button type="button" id="btnAddCustom">
+      <span class="ca-plus">+</span>
+      <span class="ca-text">
+        <b>Add the plan you pay today</b>
+        <small>Compare both RE/MAX plans against your current brokerage.</small>
+      </span>
+    </button>
   </div>
 
   <footer>
@@ -624,6 +694,12 @@
     el.setSelectionRange(newCaret, newCaret);
   }
 
+  // Sized to its content so the % beside it is never left floating.
+  function sizeToContent(el, pad) {
+    if (!el) return;
+    el.style.width = (Math.max(1, el.value.length) + (pad || 0)) + 'ch';
+  }
+
   const readNum = (id) => Number(document.getElementById(id).value.replace(/,/g, '')) || 0;
   const setVal = (id, n) => {
     document.getElementById(id).value = Math.round(n).toLocaleString('en-US');
@@ -645,7 +721,9 @@
       render();
     });
   });
-  document.getElementById('commissionRate').addEventListener('input', render);
+  const commissionEl = document.getElementById('commissionRate');
+  commissionEl.addEventListener('input', () => { sizeToContent(commissionEl); render(); });
+  sizeToContent(commissionEl);
 
   document.getElementById('btnAddCustom').addEventListener('click', () => {
     showCustom = true;
