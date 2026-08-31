@@ -44,6 +44,39 @@
   input, textarea, button, select { font-family: inherit; }
   /* The brand sits on a light bar, because the wordmark is black. The two
      buttons are the whole navigation: no page title, no tagline. */
+  /* One link for the whole scenario, reachable from either page */
+  .save-dock {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .save-dock-status {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 2px 6px;
+  }
+  .save-dock-status:empty { display: none; }
+  .save-dock-btn {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--bg);
+    background: var(--remax-blue);
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(12, 39, 73, 0.25);
+  }
+  .save-dock-btn:hover { background: var(--remax-blue-dark, #000e35); }
+  .save-dock-btn.is-done { background: var(--win); }
+  @media print { .save-dock { display: none !important; } }
+
   /* Page transition: the mark flashes over the navigation between the two
      pages. Hidden outright when it is not running, so it can never swallow a
      click, and skipped entirely for reduced motion. */
@@ -584,6 +617,10 @@
 </head>
 <body>
 <div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" /></div>
+<div class="save-dock">
+  <span class="save-dock-status" id="saveStatus"></span>
+  <button type="button" class="save-dock-btn" id="btnSaveLink">Copy link</button>
+</div>
 <header>
   <div class="header-bar">
     <img class="brand" src="remax-logo.png" alt="RE/MAX" />
@@ -854,7 +891,7 @@
   // --- A link from the business plan builder ---
   // The builder solves for volume and deal count; arriving with those already
   // filled in is the whole point of the link.
-  const shared = Share.read();
+  const shared = Share.begin();
   if (shared.i) {
     const i = shared.i;
     const set = (id, v) => { document.getElementById(id).value = Number(v).toLocaleString('en-US'); };
@@ -871,19 +908,18 @@
   // it from here carries the edits made here. The builder's half rides along
   // untouched.
   function updateShare() {
-    if (!shared.i) return;
-    shared.i = {
+    Share.contribute('i', {
       volume: readNum('volume'),
       transactions: readNum('transactions'),
       commissionRate: Number(document.getElementById('commissionRate').value) || 0,
       mls: readNum('mls'),
       showCustom: showCustom,
       customPlan: currentPlan,
-    };
-    Share.write(shared);
-    Share.carryIntoLinks();
+    });
   }
   document.querySelector('.container').addEventListener('input', updateShare);
+  updateShare();
+  Share.mountDock();
 
   updateAvgPrice();
   render();

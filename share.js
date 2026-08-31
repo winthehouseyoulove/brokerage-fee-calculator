@@ -5,6 +5,10 @@
   'use strict';
 
   const KEY = 's=';
+  // Both pages write their own half here as the user works, so one link can
+  // carry a scenario they built by moving between them. Session-scoped: it is
+  // this tab's work in progress, not a saved document.
+  const SESSION_KEY = 'remax-share-state';
 
   // Base64 over the raw UTF-8 bytes. Percent-encoding first would survive
   // unicode too, but it inflates the link by half again for no gain.
@@ -90,5 +94,56 @@
     return any;
   }
 
-  global.Share = { read, write, copy, carryIntoLinks, adopt };
+  function session() {
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function remember(payload) {
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload)); } catch (e) {}
+  }
+
+  // A link someone opened describes a finished scenario, so it seeds the tab.
+  // After that the tab's own state is what the copy button hands out.
+  function begin() {
+    const fromLink = read();
+    if (fromLink.v === 1) remember(fromLink);
+    return session();
+  }
+
+  // Each page owns one half: 'p' the plan builder, 'i' the comparison page.
+  function contribute(key, half) {
+    const merged = session();
+    merged.v = 1;
+    merged[key] = half;
+    remember(merged);
+  }
+
+  // The link lands on the page the sender was using; the nav carries the
+  // payload from there.
+  function linkFor() {
+    return global.location.origin + global.location.pathname + '#' + encode(session());
+  }
+
+  // The copy control sits in the corner of both pages.
+  function mountDock() {
+    const btn = document.getElementById('btnSaveLink');
+    if (!btn) return;
+    const label = btn.textContent;
+    let resetTimer = null;
+    btn.addEventListener('click', () => {
+      const url = linkFor();
+      try { global.history.replaceState(null, '', url); } catch (e) {}
+      carryIntoLinks();
+      copy(url).then(ok => {
+        btn.textContent = ok ? 'Link copied' : 'Link is in the address bar';
+        btn.classList.add('is-done');
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => {
+          btn.textContent = label;
+          btn.classList.remove('is-done');
+        }, 2600);
+      });
+    });
+  }
+
+  global.Share = { read, write, copy, carryIntoLinks, adopt, begin, session, contribute, linkFor, mountDock };
 })(window);

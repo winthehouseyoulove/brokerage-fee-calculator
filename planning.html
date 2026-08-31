@@ -101,6 +101,39 @@
   }
   /* The brand sits on a light bar, because the wordmark is black. The two
      buttons are the whole navigation: no page title, no tagline. */
+  /* One link for the whole scenario, reachable from either page */
+  .save-dock {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .save-dock-status {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 2px 6px;
+  }
+  .save-dock-status:empty { display: none; }
+  .save-dock-btn {
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--bg);
+    background: var(--remax-blue);
+    border: none;
+    padding: 10px 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(12, 39, 73, 0.25);
+  }
+  .save-dock-btn:hover { background: var(--remax-blue-dark, #000e35); }
+  .save-dock-btn.is-done { background: var(--win); }
+  @media print { .save-dock { display: none !important; } }
+
   /* Page transition: the mark flashes over the navigation between the two
      pages. Hidden outright when it is not running, so it can never swallow a
      click, and skipped entirely for reduced motion. */
@@ -276,6 +309,14 @@
   }
 
   /* Toolbar under the page title */
+  .expense-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
   .toolbar {
     max-width: 1100px;
     margin: 14px auto 0;
@@ -1753,6 +1794,10 @@
 </head>
 <body>
 <div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" /></div>
+<div class="save-dock">
+  <span class="save-dock-status" id="saveStatus"></span>
+  <button type="button" class="save-dock-btn" id="btnSaveLink">Copy link</button>
+</div>
 <header>
   <div class="header-bar">
     <img class="brand" src="remax-logo.png" alt="RE/MAX" />
@@ -1760,13 +1805,6 @@
       <a href="index.html">Plan Comparison</a>
       <a href="planning.html" class="active">Business Plan</a>
     </nav>
-  </div>
-  <div class="toolbar">
-    <button type="button" class="tb-btn" id="btnCopyLink">Copy link to this plan</button>
-    <button type="button" class="tb-btn" id="btnPrint">Print or save as PDF</button>
-    <button type="button" class="tb-btn" id="btnDemo">Load demo numbers</button>
-    <button type="button" class="tb-btn" id="btnClear">Clear all</button>
-    <span class="tb-status" id="saveStatus"></span>
   </div>
 </header>
 
@@ -1777,7 +1815,7 @@
     <div class="step expense-step">
       <h2 id="expenseHeading">Personal &amp; Business Expenses</h2>
       <p class="step-sub" id="expenseIntro">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
-      <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own, or press Clear all and start fresh.</p>
+      <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own.</p>
       <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
         <button type="button" class="mt-btn is-on" data-mode="simple">I know my take-home goal</button>
         <button type="button" class="mt-btn" data-mode="detailed">Break down my expenses</button>
@@ -1785,13 +1823,22 @@
 
       <div id="simplePanel" class="simple-panel" hidden>
         <div class="sp-field">
-          <div class="apc-label">Goal Take-Home</div>
+          <div class="apc-label">Goal Household Income</div>
           <div class="trc-sublabel">Per year, after tax</div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
             <input type="text" inputmode="numeric" id="goalTakeHome" value="80,000" />
           </div>
-          <p class="sp-hint">What you want left over for your life once tax and business costs are paid.</p>
+          <p class="sp-hint">What your whole household needs to live on for the year, after tax. Everyone's income counts toward it, not just yours.</p>
+        </div>
+        <div class="sp-field">
+          <div class="apc-label">Other Income</div>
+          <div class="trc-sublabel">Per year, after tax</div>
+          <div class="apc-input">
+            <span class="apc-prefix">$</span>
+            <input type="text" inputmode="numeric" id="simpleOtherIncome" value="0" />
+          </div>
+          <p class="sp-hint">The part of that goal someone else already covers: a spouse's paycheck, a side job, anything that is not your real estate income.</p>
         </div>
         <div class="sp-field">
           <div class="apc-label">Business Expenses</div>
@@ -1801,15 +1848,6 @@
             <input type="text" inputmode="numeric" id="simpleBusiness" value="15,096" />
           </div>
           <p class="sp-hint">Everything you spend running the business outside the brokerage.</p>
-        </div>
-        <div class="sp-field">
-          <div class="apc-label">Other Income</div>
-          <div class="trc-sublabel">Per year, after tax</div>
-          <div class="apc-input">
-            <span class="apc-prefix">$</span>
-            <input type="text" inputmode="numeric" id="simpleOtherIncome" value="0" />
-          </div>
-          <p class="sp-hint">A spouse's paycheck, a side job, anything that already covers part of your life.</p>
         </div>
       </div>
 
@@ -1844,13 +1882,23 @@
           <span class="val"><span id="incomeMonthly">$0</span><span class="ct-unit">/mo</span> · <span id="incomeAnnual">$0</span><span class="ct-unit">/yr</span></span>
         </div>
       </div>
+
+      <!-- Only the itemised lists are worth filling or emptying wholesale -->
+      <div class="expense-actions">
+        <button type="button" class="tb-btn" id="btnDemo">Load demo numbers</button>
+        <button type="button" class="tb-btn" id="btnClear">Clear all</button>
+      </div>
       </div>
     </div>
 
     <!-- Steps 2-4: Income → Volume funnel -->
     <div class="step funnel-step">
-      <h2>How Much Do You Need to Sell?</h2>
-      <p class="step-sub">Walk down: what selling has to cover once your other income is counted, grossed up for the tax on the personal half, converted to sales volume. The volume is solved so the plan you pick hits your goal. Until you pick one, it runs on whichever plan needs the fewest deals.</p>
+      <!-- Carries the goal above straight into the first tier. Outside .funnel
+           on purpose: the gates that open the walk are the flows inside it. -->
+      <div class="funnel-flow simple">
+        <div class="flow-line"></div>
+        <div class="flow-arrow"></div>
+      </div>
       <div class="funnel">
 
         <p class="funnel-note" id="emptyNote" hidden>Enter your expenses above, or press <strong>Load demo numbers</strong>, to see what you need to sell.</p>
@@ -2028,7 +2076,7 @@
 <style>
   @media print {
     /* Controls do nothing on paper */
-    .toolbar, .mode-toggle, .li-add, .li-remove, .apc-slider,
+    .toolbar, .expense-actions, .mode-toggle, .li-add, .li-remove, .apc-slider,
     .tier-info, .tax-tooltip, .tier-tooltip,
     .gate-label, .gate-all, .agent-results { display: none !important; }
     /* Print the whole funnel, not just as far as the reader clicked */
@@ -2522,6 +2570,43 @@
       + '<span class="tt-result">' + result + '</span>';
   }
 
+  // ---------- One link that carries both pages ----------
+  // The comparison page needs the production numbers this plan produced, so
+  // the payload holds the plan builder's state and the inputs that page asks
+  // for. Opening the link on either page lands on the same scenario.
+  const MLS_LABEL = 'MLS dues';
+  // Only what differs from the defaults travels, so a take-home-goal plan is a
+  // short link instead of twenty expense lines nobody edited.
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  function sharePayload() {
+    const best = lastResult;
+    const mlsLine = state.business.find(x => x.label === MLS_LABEL);
+    const p = {
+      mode: state.mode, goalTakeHome: state.goalTakeHome, simpleBusiness: state.simpleBusiness,
+      simpleOtherIncome: state.simpleOtherIncome, simpleEdited: state.simpleEdited,
+      personalTaxRate: state.personalTaxRate, commissionRate: state.commissionRate,
+      avgPrice: state.avgPrice, agentName: state.agentName,
+      selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
+      touched: true,
+    };
+    ['personal', 'business', 'income'].forEach(g => {
+      if (!same(state[g], DEFAULTS[g])) p[g] = state[g];
+    });
+    if (state.showCustomPlan) p.customPlan = state.customPlan;
+    return {
+      v: 1,
+      p: p,
+      i: {
+        volume: Math.round(best.volume || 0),
+        transactions: best.transactions || 0,
+        commissionRate: state.commissionRate,
+        mls: mlsLine ? Number(mlsLine.amount) || 0 : 0,
+        showCustom: state.showCustomPlan,
+        customPlan: state.customPlan,
+      },
+    };
+  }
+
   // ---------- Recompute everything ----------
   // What the funnel last produced, so the share link can carry it to the
   // comparison page without recomputing it there.
@@ -2667,6 +2752,9 @@
     renderFlow(best.gci || 0, brokerageCost, businessAnnual, taxCost,
                lifeShare, Math.max(0, pocket - lifeShare));
 
+    const payload = sharePayload();
+    Share.contribute('p', payload.p);
+    Share.contribute('i', payload.i);
     saveState();
   }
 
@@ -2733,7 +2821,7 @@
 
   // A link the user was sent describes a specific plan, so it outranks
   // whatever this browser happens to have saved.
-  const shared = Share.read();
+  const shared = Share.begin();
   const restored = Share.adopt(state, shared.p) || loadState();
   Share.carryIntoLinks();
   renderAvgPriceNote();
@@ -2985,9 +3073,10 @@
     // "monthly" above three per-year fields.
     document.getElementById('expenseHeading').textContent =
       state.mode === 'simple' ? 'Your Take-Home Goal' : 'Personal & Business Expenses';
-    document.getElementById('expenseIntro').innerHTML = state.mode === 'simple'
-      ? 'Three numbers are enough. Enter <strong>per-year</strong> amounts, or switch back to break them down.'
-      : 'What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.';
+    // The three fields label themselves, so the goal mode needs no preamble.
+    const intro = document.getElementById('expenseIntro');
+    intro.hidden = state.mode === 'simple';
+    intro.innerHTML = 'What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.';
     document.querySelectorAll('.mt-btn').forEach(b => {
       b.classList.toggle('is-on', b.dataset.mode === state.mode);
       b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
@@ -3191,58 +3280,17 @@
   });
   syncClear();
 
-  // ---------- One link that carries both pages ----------
-  // The comparison page needs the production numbers this plan produced, so
-  // the payload holds the plan builder's state and the inputs that page asks
-  // for. Opening the link on either page lands on the same scenario.
-  const MLS_LABEL = 'MLS dues';
-  // Only what differs from the defaults travels, so a take-home-goal plan is a
-  // short link instead of twenty expense lines nobody edited.
-  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-  function sharePayload() {
-    const best = lastResult;
-    const mlsLine = state.business.find(x => x.label === MLS_LABEL);
-    const p = {
-      mode: state.mode, goalTakeHome: state.goalTakeHome, simpleBusiness: state.simpleBusiness,
-      simpleOtherIncome: state.simpleOtherIncome, simpleEdited: state.simpleEdited,
-      personalTaxRate: state.personalTaxRate, commissionRate: state.commissionRate,
-      avgPrice: state.avgPrice, agentName: state.agentName,
-      selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
-      touched: true,
-    };
-    ['personal', 'business', 'income'].forEach(g => {
-      if (!same(state[g], DEFAULTS[g])) p[g] = state[g];
-    });
-    if (state.showCustomPlan) p.customPlan = state.customPlan;
-    return {
-      v: 1,
-      p: p,
-      i: {
-        volume: Math.round(best.volume || 0),
-        transactions: best.transactions || 0,
-        commissionRate: state.commissionRate,
-        mls: mlsLine ? Number(mlsLine.amount) || 0 : 0,
-        showCustom: state.showCustomPlan,
-        customPlan: state.customPlan,
-      },
-    };
-  }
-
-  document.getElementById('btnCopyLink').addEventListener('click', () => {
-    const url = Share.write(sharePayload());
-    Share.carryIntoLinks();
-    Share.copy(url).then(ok => {
-      setSaveStatus(ok ? 'Link copied' : 'Could not copy, the link is in the address bar');
-      setTimeout(() => saveState(), 4000);
-    });
-  });
+  Share.mountDock();
 
   // ---------- Toolbar ----------
-  document.getElementById('btnPrint').addEventListener('click', () => window.print());
   document.getElementById('btnDemo').addEventListener('click', () => {
+    // These controls live inside the breakdown, so loading demo numbers must
+    // not drop the user back into goal mode and hide the button they pressed.
+    const mode = state.mode;
     Object.keys(DEFAULTS).forEach(k => {
       state[k] = JSON.parse(JSON.stringify(DEFAULTS[k]));
     });
+    state.mode = mode;
     syncInputs();
     recompute();
   });
