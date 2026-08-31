@@ -933,6 +933,16 @@
     cursor: pointer;
     padding-bottom: 8px;
   }
+  .funnel-flow.gate-active .flow-line { border-left-color: var(--remax-red); }
+  .funnel-flow.gate-active .flow-arrow {
+    border-left-width: 10px;
+    border-right-width: 10px;
+    border-top-width: 13px;
+    border-top-color: var(--remax-red);
+  }
+  /* Every arrow above the current step still opens the next one */
+  .funnel-flow:not(.is-locked) { cursor: pointer; }
+  .funnel-flow.all-open, .funnel-flow.all-open .flow-arrow { cursor: default; }
   .gate-label {
     font-family: inherit;
     background: var(--card);
@@ -2780,9 +2790,11 @@
     stepEls.forEach((els, i) => {
       els.forEach(el => el.classList.toggle('is-locked', i + 1 > revealed));
     });
+    const allOpen = revealed >= REVEAL_STEPS.length;
     gates.forEach((gate, i) => {
       const stepBelow = i + 2;                  // the step this arrow opens
       const isActive = stepBelow === revealed + 1;
+      gate.classList.toggle('all-open', allOpen);
       gate.classList.toggle('is-locked', stepBelow > revealed + 1);
       gate.classList.toggle('gate-active', isActive);
       let label = gate.querySelector('.gate-label');
@@ -2816,15 +2828,19 @@
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
+  // Any visible arrow opens the next step, not only the one at the bottom.
+  // An arrow that looks like the others but does nothing reads as broken.
   gates.forEach(gate => {
     gate.addEventListener('click', (e) => {
-      if (!gate.classList.contains('gate-active')) return;
+      if (gate.classList.contains('is-locked')) return;
+      if (revealed >= REVEAL_STEPS.length) return;
       revealNext(!!e.target.closest('.gate-all'));
     });
   });
-  // Someone opening a shared link, or coming back to a saved plan, has already
-  // walked the funnel. Only a first visit starts at the top.
-  if (restored) revealed = REVEAL_STEPS.length;
+  // A shared link is someone being shown a finished plan, so it opens whole.
+  // A saved plan is not: the walk is how this page reads, and the numbers are
+  // still there when the reader gets to them.
+  if (shared.p) revealed = REVEAL_STEPS.length;
   applyReveal();
   // ---------- Mode toggle ----------
   function applyMode() {
