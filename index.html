@@ -124,9 +124,16 @@
   .agent-result:hover, .agent-result.active {
     background: var(--field-bg);
   }
+  .agent-result .ar-who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
   .agent-result .ar-name { font-weight: 600; color: var(--text); }
-  .agent-result .ar-stats { font-size: 12px; color: var(--muted); }
+  .agent-result .ar-office {
+    font-size: 12px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .agent-result .ar-stats { font-size: 12px; color: var(--muted); white-space: nowrap; padding-left: 12px; }
   .agent-result .ar-empty { color: var(--muted); font-style: italic; }
+  .agent-result.ar-more { cursor: default; justify-content: center; font-size: 12px; color: var(--muted); }
+  .agent-result.ar-more:hover { background: none; }
   .agent-loaded {
     margin-top: 6px;
     font-size: 12px;
@@ -719,7 +726,9 @@
   render();
 
   // --- Agent search ---
-  const agents = window.__AGENTS__ || [];
+  const agents = [...(window.__AGENTS__ || [])].sort((a, b) => a.name.localeCompare(b.name));
+  const MAX_RESULTS = 50;
+  let totalMatches = 0;
   let activeIndex = -1;
   const searchEl = document.getElementById('agentSearch');
   const resultsEl = document.getElementById('agentResults');
@@ -727,9 +736,11 @@
 
   function filterAgents(q) {
     q = q.trim().toLowerCase();
-    const sorted = [...agents].sort((a, b) => a.name.localeCompare(b.name));
-    if (!q) return sorted;
-    return sorted.filter(a => a.name.toLowerCase().includes(q));
+    const hits = q
+      ? agents.filter(a => a.name.toLowerCase().includes(q) || a.office.toLowerCase().includes(q))
+      : agents;
+    totalMatches = hits.length;
+    return hits.slice(0, MAX_RESULTS);
   }
 
   function renderResults(matches) {
@@ -740,10 +751,15 @@
     }
     resultsEl.innerHTML = matches.map((a, i) => `
       <div class="agent-result${i === activeIndex ? ' active' : ''}" data-index="${i}">
-        <span class="ar-name">${a.name}</span>
+        <span class="ar-who">
+          <span class="ar-name">${a.name}</span>
+          <span class="ar-office">${a.office}</span>
+        </span>
         <span class="ar-stats">${a.units} units · $${a.volume.toLocaleString('en-US')}</span>
       </div>
-    `).join('');
+    `).join('') + (totalMatches > matches.length
+      ? `<div class="agent-result ar-more">Showing ${matches.length} of ${totalMatches} — keep typing to narrow</div>`
+      : '');
     resultsEl.classList.add('open');
   }
 
@@ -754,7 +770,7 @@
     render();
     searchEl.value = agent.name;
     resultsEl.classList.remove('open');
-    loadedEl.textContent = `Loaded ${agent.name} — 2025 MLS data ($${agent.volume.toLocaleString('en-US')} · ${agent.units} units)`;
+    loadedEl.textContent = `Loaded ${agent.name}, ${agent.office} — 2025 MLS data ($${agent.volume.toLocaleString('en-US')} · ${agent.units} units)`;
     loadedEl.style.display = 'block';
   }
 

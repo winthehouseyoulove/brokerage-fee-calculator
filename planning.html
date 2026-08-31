@@ -2301,10 +2301,16 @@
 
     // Column 3 takes what is taxed and splits it: the agent's money on top,
     // tax dropping out the bottom, matching how the earlier cuts are drawn.
+    // A bare percentage invited the question "percentage of what". Every band
+    // now says. Tax is the one that differs: the rate entered above is charged
+    // on what is left after the brokerage and business costs, not on the whole
+    // commission, so it names its own base instead of the trunk.
+    const ofGci = (v) => Math.round(100 * v / gci) + '% of GCI';
+    const taxBasis = Math.round(state.personalTaxRate) + '% of the ' + fmt(taxable) + ' taxed';
     const finals = [
-      { name: 'Your life', value: life, fill: RED },
-      { name: 'Surplus', value: surplus, fill: AMBER },
-      { name: 'Tax', value: tax, fill: STONE },
+      { name: 'Your life', value: life, fill: RED, note: ofGci(life) },
+      { name: 'Surplus', value: surplus, fill: AMBER, note: ofGci(surplus) },
+      { name: 'Tax', value: tax, fill: STONE, note: taxBasis },
     ].filter(e => e.value > 0.5);
 
     let links = '', nodes = '', labels = '';
@@ -2312,10 +2318,10 @@
       + '" height="' + hh + '" fill="' + fill + '"></rect>';
     const link = (x1, x2, a0, a1, b0, b1, fill) =>
       '<path class="fl-link" d="' + ribbon(x1, x2, a0, a1, b0, b1) + '" fill="' + fill + '"></path>';
-    const label = (x, cy, name, value) =>
+    const label = (x, cy, name, value, note) =>
       '<text class="fl-name" x="' + x + '" y="' + (cy - 1) + '">' + name + '</text>'
       + '<text class="fl-val" x="' + x + '" y="' + (cy + 12) + '">' + fmt(value)
-      + ' · ' + Math.round(100 * value / gci) + '%</text>';
+      + ' · ' + note + '</text>';
 
     // Stage 1
     const keptY1 = top, brokY1 = top + h(kept) + PAD;
@@ -2334,13 +2340,13 @@
     finals.forEach(e => {
       links += link(g.X2 + NODE_W, g.X3, srcY, srcY + h(e.value), dstY, dstY + h(e.value), e.fill);
       nodes += rect(g.X3, dstY, h(e.value), e.fill);
-      if (g.labels) labels += label(g.X3 + NODE_W + 9, dstY + h(e.value) / 2, e.name, e.value);
+      if (g.labels) labels += label(g.X3 + NODE_W + 9, dstY + h(e.value) / 2, e.name, e.value, e.note);
       srcY += h(e.value); dstY += h(e.value) + PAD;
     });
 
     if (g.labels) {
-      labels += label(g.X1 + NODE_W + 8, brokY1 + h(brokerage) / 2, 'Brokerage', brokerage);
-      labels += label(g.X2 + NODE_W + 8, bizY2 + h(business) / 2, 'Business costs', business);
+      labels += label(g.X1 + NODE_W + 8, brokY1 + h(brokerage) / 2, 'Brokerage', brokerage, ofGci(brokerage));
+      labels += label(g.X2 + NODE_W + 8, bizY2 + h(business) / 2, 'Business costs', business, ofGci(business));
       labels += '<text class="fl-name" x="0" y="13">GCI ' + fmt(gci) + '</text>'
         + '<text class="fl-name" x="' + g.X1 + '" y="13">You keep</text>'
         + '<text class="fl-name" x="' + g.X2 + '" y="13">Taxed on</text>';
@@ -2351,31 +2357,23 @@
     // Legend carries the numbers when the chart cannot
     const legend = document.getElementById('flowLegend');
     const items = [
-      { name: 'Brokerage', value: brokerage, fill: BLUE },
-      { name: 'Business costs', value: business, fill: GREY },
+      { name: 'Brokerage', value: brokerage, fill: BLUE, note: ofGci(brokerage) },
+      { name: 'Business costs', value: business, fill: GREY, note: ofGci(business) },
     ].concat(finals);
     legend.hidden = g.labels;
     legend.innerHTML = g.labels ? '' : items.map(e =>
       '<li><i style="background:' + e.fill + '"></i><b>' + e.name + '</b>'
-      + '<span>' + fmt(e.value) + ' · ' + Math.round(100 * e.value / gci) + '%</span></li>').join('');
+      + '<span>' + fmt(e.value) + ' · ' + e.note + '</span></li>').join('');
 
     document.getElementById('flowHeadline').innerHTML =
       'You bring in <strong>' + fmt(gci) + '</strong> in commission. '
       + '<strong>' + fmt(life + surplus) + '</strong> of it reaches your pocket.';
-    // Every band is shown as a share of GCI, so the widths and the percentages
-    // agree. Tax therefore reads lower here than the rate entered above, which
-    // applies only to the taxed-on column. Say so, rather than leaving two
-    // different-looking tax percentages on one page.
-    const taxPct = Math.round(100 * tax / gci);
     document.getElementById('flowDesc').textContent =
       'Read it left to right, in the order the money actually leaves. The brokerage '
       + 'takes its cut first, then your business costs come out of what you keep. '
-      + 'Neither one is taxed. Tax is figured on what is left after both. Surplus is '
-      + 'what the extra whole deal leaves over, after tax. '
-      + 'Every percentage here is a share of your gross commission, which is why tax reads '
-      + taxPct + '% rather than the ' + state.personalTaxRate + '% you entered: that rate is '
-      + 'charged on the ' + fmt(taxable) + ' left after the brokerage and your business costs, '
-      + 'not on the whole ' + fmt(gci) + '.';
+      + 'Neither one is taxed, which is why your ' + state.personalTaxRate + '% rate is charged on '
+      + fmt(taxable) + ' rather than on the whole ' + fmt(gci) + '. Surplus is what the extra '
+      + 'whole deal leaves over, after tax.';
   }
 
   // ---------- What the year has to cover ----------
