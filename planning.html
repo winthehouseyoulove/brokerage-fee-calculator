@@ -66,34 +66,114 @@
     color: var(--muted);
     margin-bottom: 5px;
   }
-  .tax-field-city { flex: 1 1 150px; min-width: 140px; }
-  .city-search { margin: 0; padding: 0; }
-  .city-search input { height: 34px; font-size: 13px; }
-  .city-search .agent-results { top: calc(100% + 2px); max-height: 220px; }
-  .city-search .agent-result { padding: 7px 12px; font-size: 13px; }
-
-  /* The four things the rate is made of, shown rather than hidden */
-  .tax-breakdown {
-    margin: 14px 0 4px;
-    border-top: 1px solid var(--border);
-    font-size: 12.5px;
+  .tax-field-city { flex: 1 1 220px; min-width: 200px; }
+  /* The city and its rate are one control: the rate belongs to the city */
+  .city-group {
+    display: flex;
+    border: 1px solid var(--border);
+    background: var(--field-bg);
+    height: 38px;
+  }
+  .city-group:focus-within { border-color: var(--remax-blue); background: var(--field-bg-focus); }
+  .tax-field-city .city-search {
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    min-width: 0;
+    box-shadow: none;
+  }
+  .tax-field-city .city-search .agent-input { height: 100%; }
+  .tax-field-city .city-search input {
+    height: 100%;
+    font-size: 13px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0 30px 0 12px;
+  }
+  .tax-field-city .city-search input:focus { background: transparent; outline: none; }
+  .tax-field-city .city-search .agent-clear { right: 2px; width: 26px; height: 26px; font-size: 16px; }
+  .tax-field-city .city-search .agent-results { top: calc(100% + 3px); max-height: 220px; }
+  .tax-field-city .city-search .agent-result { padding: 7px 12px; font-size: 13px; }
+  .city-rate {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    flex: none;
+    padding: 0 10px;
+    border-left: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .city-rate input {
+    border: none;
+    background: transparent;
+    padding: 0;
+    height: auto;
+    width: 3.2ch;
+    font: inherit;
+    text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+  .city-rate input:focus { outline: none; }
+
+  /* The bill, four parts adding to one answer at the bottom */
+  .tax-breakdown {
+    margin: 16px 0 12px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tb-head {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
   }
   .tb-row {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     gap: 12px;
-    padding: 6px 0;
+    padding: 7px 0;
     border-bottom: 1px solid var(--border);
   }
   .tb-row span:first-child { color: var(--muted); }
+  .tb-row span:last-child { font-weight: 600; }
   .tb-row.tb-total {
     border-bottom: none;
+    border-top: 2px solid var(--text);
+    padding-top: 10px;
+    margin-top: 2px;
+  }
+  .tb-total .tb-label {
+    font-size: 13px;
     font-weight: 700;
     color: var(--text);
   }
-  .tb-row.tb-total span:first-child { color: var(--text); }
+  .tb-total .tb-answer {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--remax-red);
+    line-height: 1.1;
+  }
+  .tb-total .tb-answer small {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: right;
+  }
   .tb-none { color: var(--win); font-weight: 600; }
+  /* The ? is designed for the dark tiers; on a white card it needs its own */
+  .trc-col .tier-info {
+    background: var(--border);
+    color: var(--text);
+  }
+  .trc-col .tier-info:hover, .trc-col .tier-info:focus { background: #d8d2bd; }
   .apc-input-small input { font-size: 18px; }
   .apc-input-small .apc-suffix { font-size: 15px; }
   .trc-note a { color: var(--remax-blue); }
@@ -170,7 +250,7 @@
   /* One link for the whole scenario, reachable from either page */
   .save-dock {
     position: fixed;
-    right: 20px;
+    right: max(20px, calc((100vw - 1100px) / 2 + 20px));
     bottom: 20px;
     z-index: 900;
     display: flex;
@@ -204,6 +284,13 @@
   .sl-check { display: none; }
   .save-dock-btn.is-done .sl-link { display: none; }
   .save-dock-btn.is-done .sl-check { display: block; }
+  /* Narrow screens have no margin for it to sit in, so it gets out of the way
+     as much as a fixed control can: smaller, tucked into the corner. */
+  @media (max-width: 1148px) {
+    .save-dock { right: 12px; bottom: 12px; }
+    .save-dock-btn { width: 40px; height: 40px; }
+    .sl-icon { width: 18px; height: 18px; }
+  }
   @media print { .save-dock { display: none !important; } }
 
   /* Page transition: the mark flashes over the navigation between the two
@@ -271,7 +358,7 @@
   .layout {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 24px 24px 80px;
   }
 
   .agent-search {
@@ -2004,12 +2091,6 @@
 
             <div id="ohioTaxPanel">
               <div class="tier-tooltip wide" id="taxTooltip"></div>
-              <div class="apc-label">Your Tax Rate<span class="tier-info" id="taxInfo" tabindex="0">?</span></div>
-              <div class="trc-sublabel">Federal, self-employment, Ohio and city</div>
-              <div class="apc-input">
-                <span class="trc-locked" id="ohioEffective">0</span>
-                <span class="apc-suffix">%</span>
-              </div>
               <div class="tax-fields">
                 <div class="tax-field">
                   <label>Filing status</label>
@@ -2019,23 +2100,22 @@
                   </div>
                 </div>
                 <div class="tax-field tax-field-city">
-                  <label for="citySearch">Your city</label>
-                  <div class="agent-search city-search">
-                    <div class="agent-input">
-                      <input type="search" id="citySearch" name="ohio-city-lookup"
-                             placeholder="Search your city"
-                             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                             role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cityResults" />
-                      <button type="button" class="agent-clear" id="cityClear" aria-label="Clear the city" hidden>&times;</button>
+                  <label for="citySearch">Your city, and its rate</label>
+                  <div class="city-group">
+                    <div class="agent-search city-search">
+                      <div class="agent-input">
+                        <input type="search" id="citySearch" name="ohio-city-lookup"
+                               placeholder="Search your city"
+                               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                               role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cityResults" />
+                        <button type="button" class="agent-clear" id="cityClear" aria-label="Clear the city" hidden>&times;</button>
+                      </div>
+                      <div class="agent-results" id="cityResults"></div>
                     </div>
-                    <div class="agent-results" id="cityResults"></div>
-                  </div>
-                </div>
-                <div class="tax-field">
-                  <label for="cityRate">City rate</label>
-                  <div class="apc-input apc-input-small">
-                    <input type="text" inputmode="decimal" id="cityRate" value="1.45" />
-                    <span class="apc-suffix">%</span>
+                    <div class="city-rate">
+                      <input type="text" inputmode="decimal" id="cityRate" value="1.45" aria-label="City income tax rate" />
+                      <span>%</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2043,7 +2123,7 @@
 
               <div class="tax-breakdown" id="taxBreakdown"></div>
 
-              <p class="trc-note">Your business expenses never reach this table. They come off before tax, so a dollar of expense costs you a dollar of revenue and nothing more. That is why there is no rate to set for them.</p>
+              <p class="trc-note">Business expenses never appear here. They come off before tax, so a dollar of expense costs a dollar of revenue and nothing more, which is why there is no rate to set for them.</p>
             </div>
 
             <div id="flatTaxPanel" hidden>
@@ -2807,20 +2887,25 @@
 
     // The Ohio panel prints the rate the brackets produced, and its ? breaks
     // the bill into the four things that make it up.
-    const effEl = document.getElementById('ohioEffective');
-    if (effEl) effEl.textContent = shownRate.toFixed(1);
     if (state.taxMode === 'ohio') {
       const t = OhioTax.estimate(personalGrossed, taxOpts());
       const row = (label, value, note) =>
         '<div class="tb-row"><span>' + label + '</span><span>'
         + (note ? '<span class="tb-none">' + note + '</span>' : fmt(value)) + '</span></div>';
       document.getElementById('taxBreakdown').innerHTML =
-        '<div class="tb-row tb-total"><span>On ' + fmt(t.profit) + ' of profit</span><span>'
-          + fmt(t.total) + '</span></div>'
+        '<div class="tb-head">What you would owe on ' + fmt(t.profit) + ' of profit</div>'
         + row('Self-employment tax', t.seTax)
         + row('Federal income tax', t.federalTax)
         + row('Ohio income tax', t.ohioTax, t.ohioTax === 0 ? 'Nothing, deducted' : '')
-        + row('City income tax' + (state.cityName ? ', ' + state.cityName : '') + ' at ' + state.cityRate + '%', t.cityTax);
+        + row('City income tax' + (state.cityName ? ', ' + state.cityName : '')
+              + ' at ' + state.cityRate + '%', t.cityTax)
+        + '<div class="tb-row tb-total">'
+          + '<span class="tb-label">All four together<span class="tier-info" id="taxInfo" tabindex="0">?</span></span>'
+          + '<span class="tb-answer">' + shownRate.toFixed(1) + '%'
+            + '<small>' + fmt(t.total) + ' of ' + fmt(t.profit) + '</small></span>'
+        + '</div>';
+      // The ? is rebuilt with the row, so it is rebound each time
+      bindInfo('taxInfo', 'taxTooltip');
 
       setTooltip('taxTooltip',
         'Self-employment tax is 15.3% on 92.35% of what you earn, with Social Security capped. '
@@ -3183,11 +3268,10 @@
     if (!note) return;
     const avg = OhioCities.average.toFixed(2);
     note.innerHTML = state.cityName
-      ? state.cityName + ' charges ' + state.cityRate + '%, and it lands on every dollar of profit: '
-        + 'municipalities have no equivalent of Ohio\'s Business Income Deduction.'
-      : 'Starting at <strong>' + avg + '%</strong>, the average across the '
-        + OhioCities.CITIES.length + ' Ohio municipalities listed. Pick your city for its own rate, '
-        + 'or type one in. Not every Ohio municipality is on that list, so a missing city is not a city without a tax.';
+      ? 'City tax lands on every dollar of profit: municipalities have no equivalent of Ohio\'s Business Income Deduction.'
+      : 'Starting at the <strong>' + avg + '%</strong> average of ' + OhioCities.CITIES.length
+        + ' Ohio municipalities. Pick yours, or type a rate: not every municipality is listed, '
+        + 'and a missing one is not a city without a tax.';
   }
 
   function renderCityResults(matches) {

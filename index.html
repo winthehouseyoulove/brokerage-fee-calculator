@@ -81,6 +81,11 @@
   .sl-check { display: none; }
   .save-dock-btn.is-done .sl-link { display: none; }
   .save-dock-btn.is-done .sl-check { display: block; }
+  @media (max-width: 1148px) {
+    .save-dock { right: 12px; bottom: 12px; }
+    .save-dock-btn { width: 40px; height: 40px; }
+    .sl-icon { width: 18px; height: 18px; }
+  }
   @media print { .save-dock { display: none !important; } }
 
   /* Page transition: the mark flashes over the navigation between the two
