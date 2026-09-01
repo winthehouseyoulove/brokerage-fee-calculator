@@ -44,6 +44,11 @@
 //    eligible for the Business Income Deduction" (R.C. 5733.40(A)(7))
 //    tax.ohio.gov FAQ, Business Income and the Business Income Deduction
 //
+//    Not modelled on the wage: federal and Ohio unemployment tax. FUTA is
+//    6% of the first $7,000 less the credit, roughly $42 a year, and Ohio
+//    SUTA on a new employer is of the same order; both belong in the running
+//    costs the user enters rather than in the tax math.
+//
 //    The city is close to a wash. A shareholder's distributive share of S
 //    corporation net profit is exempt from municipal income tax under
 //    R.C. 718.01(C)(14)(a), but the corporation pays municipal net profit tax
@@ -189,7 +194,11 @@
     // No half-of-self-employment-tax deduction here: the employer half already
     // came out of the business before the distribution.
     const agi = wage + distribution;
-    const qbiDeduction = o.qbi ? Math.max(0, agi - FEDERAL.standardDeduction[status]) * QBI_RATE : 0;
+    // QBI reaches the distributive share only. The owner's own W-2 wage is
+    // never qualified business income (section 199A(c)(4)).
+    const qbiDeduction = o.qbi
+      ? Math.min(distribution, Math.max(0, agi - FEDERAL.standardDeduction[status])) * QBI_RATE
+      : 0;
     const federalTaxable = Math.max(0, agi - FEDERAL.standardDeduction[status] - qbiDeduction);
     const federalTax = bracketTax(federalTaxable, status);
 

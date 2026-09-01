@@ -337,6 +337,18 @@
     ok(costly.takeHome < free.takeHome, 'and lower what is kept');
   });
 
+  test('S corporation', 'QBI reaches the distribution only, never the wage', () => {
+    // Section 199A(c)(4): the owner's own W-2 wage is not qualified business
+    // income. At a wage near the whole profit the deduction must be small.
+    const opts = { filingStatus: 'single', cityRate: 2, entity: 'scorp', qbi: true };
+    const mostlyWage = OT.estimate(120000, Object.assign({}, opts, { wage: 110000 }));
+    ok(mostlyWage.qbiDeduction <= mostlyWage.distribution * 0.2 + 0.01,
+      'QBI exceeded 20% of the distribution');
+    const mostlyDist = OT.estimate(120000, Object.assign({}, opts, { wage: 40000 }));
+    ok(mostlyDist.qbiDeduction > mostlyWage.qbiDeduction,
+      'a bigger distribution should mean more QBI');
+  });
+
   test('S corporation', 'Every figure adds up, and grossing up still inverts', () => {
     const opts = { filingStatus: 'mfj', cityRate: 2.25, entity: 'scorp', wage: 70000, entityCost: 1500 };
     [100000, 200000, 400000].forEach(profit => {

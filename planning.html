@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831h"></script>
+<script src="page-flash.js?v=20260831i"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -2391,11 +2391,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831h"></script>
-<script src="ohio-tax.js?v=20260831h"></script>
-<script src="ohio-cities.js?v=20260831h"></script>
-<script src="share.js?v=20260831h"></script>
-<script src="agents-embed.js?v=20260831h"></script>
+<script src="fee-math.js?v=20260831i"></script>
+<script src="ohio-tax.js?v=20260831i"></script>
+<script src="ohio-cities.js?v=20260831i"></script>
+<script src="share.js?v=20260831i"></script>
+<script src="agents-embed.js?v=20260831i"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -2990,8 +2990,9 @@
         + row('Ohio income tax', t.ohioTax, t.ohioTax === 0 ? 'Nothing, deducted' : '')
         + row('City income tax' + (state.cityName ? ', ' + state.cityName : '')
               + ' at ' + state.cityRate + '%', t.cityTax)
-        + '<div class="tb-row tb-total"><span class="tb-label">Total tax</span>'
-          + '<span class="tb-sum">' + fmt(t.total) + '</span></div>'
+        + '<div class="tb-row tb-total"><span class="tb-label">'
+          + (state.entity === 'scorp' ? 'Total tax and costs' : 'Total tax')
+          + '</span><span class="tb-sum">' + fmt(t.total) + '</span></div>'
         + '<div class="tb-row tb-rate">'
           + '<span class="tb-label">Combined tax rate<span class="tier-info" id="taxInfo" tabindex="0">?</span></span>'
           + '<span class="tb-answer">' + shownRate.toFixed(1) + '%</span>'
@@ -3359,7 +3360,8 @@
     scorpNote.hidden = !isScorp;
     scorpNote.innerHTML = 'The wage is the part payroll tax reaches, so a lower one saves more. '
       + 'The IRS requires it to be <strong>reasonable compensation</strong> for the work you do, '
-      + 'there is no formula, and setting it too low is what gets an election challenged.';
+      + 'there is no formula, and setting it too low is what gets an election challenged. '
+      + 'Put unemployment tax and the bookkeeping in the running costs; they ride on the wage too.';
     document.querySelectorAll('.te-btn').forEach(b => {
       b.classList.toggle('is-on', b.dataset.entity === state.entity);
       b.setAttribute('aria-pressed', String(b.dataset.entity === state.entity));
