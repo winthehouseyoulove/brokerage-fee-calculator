@@ -3473,9 +3473,33 @@
     });
   }
 
+  // The staggered delays in the stylesheet were written for a page that
+  // appeared all at once. In the walk they are wrong: the arrow beneath a step
+  // often carries a smaller delay than the step itself, so it lands first and
+  // the section fades in underneath an arrow that is already there. On a reveal
+  // the delays are set from scratch, in reading order: the section, then the
+  // arrow that opens the next one.
+  function enter(el, delay) {
+    if (!el) return;
+    el.style.animation = 'none';
+    void el.offsetWidth;                 // let the cancelled animation take
+    el.style.animation = '';
+    el.style.animationDelay = delay + 's';
+  }
+
   function revealNext(toEnd) {
+    const from = revealed;
     revealed = toEnd ? REVEAL_STEPS.length : Math.min(revealed + 1, REVEAL_STEPS.length);
     applyReveal();
+
+    // Sections that just opened, in order, then the arrow that follows them
+    let delay = 0;
+    for (let i = from; i < revealed; i++) {
+      stepEls[i].forEach(el => enter(el, delay));
+      delay += 0.12;
+    }
+    enter(gates[revealed - 1], delay + 0.16);
+
     const target = stepEls[revealed - 1][0];
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
