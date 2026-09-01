@@ -123,23 +123,28 @@
     return global.location.origin + global.location.pathname + '#' + encode(session());
   }
 
-  // The copy control sits in the corner of both pages.
+  // The copy control sits in the corner of both pages: a link that becomes a
+  // tick on the way out, so the confirmation is the button itself.
   function mountDock() {
     const btn = document.getElementById('btnSaveLink');
     if (!btn) return;
-    const label = btn.textContent;
+    const restLabel = btn.getAttribute('aria-label') || 'Copy a link to this plan';
     let resetTimer = null;
+    function say(text) {
+      btn.setAttribute('aria-label', text);
+      btn.setAttribute('title', text);
+    }
     btn.addEventListener('click', () => {
       const url = linkFor();
       try { global.history.replaceState(null, '', url); } catch (e) {}
       carryIntoLinks();
       copy(url).then(ok => {
-        btn.textContent = ok ? 'Link copied' : 'Link is in the address bar';
         btn.classList.add('is-done');
+        say(ok ? 'Link copied' : 'The link is in the address bar');
         clearTimeout(resetTimer);
         resetTimer = setTimeout(() => {
-          btn.textContent = label;
           btn.classList.remove('is-done');
+          say(restLabel);
         }, 2600);
       });
     });

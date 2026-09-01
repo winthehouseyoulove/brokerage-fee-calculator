@@ -111,27 +111,33 @@
     align-items: center;
     gap: 10px;
   }
-  .save-dock-status {
-    font-size: 11px;
-    color: var(--muted);
-    background: var(--bg);
-    padding: 2px 6px;
-  }
-  .save-dock-status:empty { display: none; }
   .save-dock-btn {
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    color: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
     background: var(--remax-blue);
     border: none;
-    padding: 10px 16px;
+    padding: 0;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(12, 39, 73, 0.25);
   }
   .save-dock-btn:hover { background: var(--remax-blue-dark, #000e35); }
   .save-dock-btn.is-done { background: var(--win); }
+  .sl-icon {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: var(--bg);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  /* The link turns into a tick on the way out and back again after a moment */
+  .sl-check { display: none; }
+  .save-dock-btn.is-done .sl-link { display: none; }
+  .save-dock-btn.is-done .sl-check { display: block; }
   @media print { .save-dock { display: none !important; } }
 
   /* Page transition: the mark flashes over the navigation between the two
@@ -309,13 +315,12 @@
   }
 
   /* Toolbar under the page title */
+  /* Sits above the lists it fills or empties */
   .expense-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
+    margin-bottom: 18px;
   }
   .toolbar {
     max-width: 1100px;
@@ -347,6 +352,7 @@
   }
 
   /* Mode toggle: take-home goal vs full breakdown */
+  .expense-step .mode-toggle { margin-bottom: 14px; }
   .mode-toggle {
     display: inline-flex;
     border: 2px solid var(--border);
@@ -1795,8 +1801,16 @@
 <body>
 <div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" /></div>
 <div class="save-dock">
-  <span class="save-dock-status" id="saveStatus"></span>
-  <button type="button" class="save-dock-btn" id="btnSaveLink">Copy link</button>
+  <button type="button" class="save-dock-btn" id="btnSaveLink"
+          aria-label="Copy a link to this plan" title="Copy a link to this plan">
+    <svg class="sl-icon sl-link" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 13.5a4 4 0 0 0 5.66 0l3-3a4 4 0 1 0-5.66-5.66l-1.5 1.5" />
+      <path d="M14 10.5a4 4 0 0 0-5.66 0l-3 3a4 4 0 1 0 5.66 5.66l1.5-1.5" />
+    </svg>
+    <svg class="sl-icon sl-check" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 12.5l5.5 5.5L20 7" />
+    </svg>
+  </button>
 </div>
 <header>
   <div class="header-bar">
@@ -1813,13 +1827,12 @@
 
     <!-- Step 1: Expenses -->
     <div class="step expense-step">
-      <h2 id="expenseHeading">Personal &amp; Business Expenses</h2>
-      <p class="step-sub" id="expenseIntro">What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.</p>
-      <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own.</p>
       <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
         <button type="button" class="mt-btn is-on" data-mode="simple">I know my take-home goal</button>
         <button type="button" class="mt-btn" data-mode="detailed">Break down my expenses</button>
       </div>
+      <h2 id="expenseHeading">Personal &amp; Business Expenses</h2>
+      <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own.</p>
 
       <div id="simplePanel" class="simple-panel" hidden>
         <div class="sp-field">
@@ -1852,6 +1865,11 @@
       </div>
 
       <div id="detailedPanel">
+      <div class="expense-actions">
+        <button type="button" class="tb-btn" id="btnDemo">Load demo numbers</button>
+        <button type="button" class="tb-btn" id="btnClear">Clear all</button>
+      </div>
+
       <div class="expense-cols">
         <div class="expense-col">
           <h3>Personal</h3>
@@ -1881,12 +1899,6 @@
           <span>Other income total</span>
           <span class="val"><span id="incomeMonthly">$0</span><span class="ct-unit">/mo</span> · <span id="incomeAnnual">$0</span><span class="ct-unit">/yr</span></span>
         </div>
-      </div>
-
-      <!-- Only the itemised lists are worth filling or emptying wholesale -->
-      <div class="expense-actions">
-        <button type="button" class="tb-btn" id="btnDemo">Load demo numbers</button>
-        <button type="button" class="tb-btn" id="btnClear">Clear all</button>
       </div>
       </div>
     </div>
@@ -2186,18 +2198,12 @@
   // Private windows and blocked site data throw on access, so every call is
   // guarded. Losing the save is survivable; throwing on load is not.
   const STORAGE_KEY = 'remax-plan-builder-v1';
-  function setSaveStatus(text) {
-    const el = document.getElementById('saveStatus');
-    if (el) el.textContent = text;
-  }
   function saveState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      // Until the user has typed anything, "saved" would claim their data is
-      // here when only the example numbers are.
-      setSaveStatus(state.touched ? 'Saved in this browser' : '');
     } catch (e) {
-      setSaveStatus('Could not save in this browser');
+      // Private windows and blocked site data throw here. Losing the save is
+      // survivable and there is nowhere left on the page to say so.
     }
   }
   function applyBanner() {
@@ -3073,10 +3079,6 @@
     // "monthly" above three per-year fields.
     document.getElementById('expenseHeading').textContent =
       state.mode === 'simple' ? 'Your Take-Home Goal' : 'Personal & Business Expenses';
-    // The three fields label themselves, so the goal mode needs no preamble.
-    const intro = document.getElementById('expenseIntro');
-    intro.hidden = state.mode === 'simple';
-    intro.innerHTML = 'What does it cost to live, and what does it cost to run the business? Enter <strong>monthly</strong> amounts.';
     document.querySelectorAll('.mt-btn').forEach(b => {
       b.classList.toggle('is-on', b.dataset.mode === state.mode);
       b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode));
