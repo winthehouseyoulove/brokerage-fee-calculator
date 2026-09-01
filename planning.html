@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831f"></script>
+<script src="page-flash.js?v=20260831g"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -2391,11 +2391,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831f"></script>
-<script src="ohio-tax.js?v=20260831f"></script>
-<script src="ohio-cities.js?v=20260831f"></script>
-<script src="share.js?v=20260831f"></script>
-<script src="agents-embed.js?v=20260831f"></script>
+<script src="fee-math.js?v=20260831g"></script>
+<script src="ohio-tax.js?v=20260831g"></script>
+<script src="ohio-cities.js?v=20260831g"></script>
+<script src="share.js?v=20260831g"></script>
+<script src="agents-embed.js?v=20260831g"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -3267,17 +3267,24 @@
   // is never left floating. Measured with the input's own font rather than
   // counted in ch: a comma is narrower than the "0" that ch approximates, and
   // the rounding kept leaving formatted amounts a pixel short of their box.
-  // The canvas hangs off the function itself: this function hoists and runs
-  // during startup, before any let or const declared beside it would exist,
-  // and both throw in that window.
+  // Measured with a hidden span rather than a canvas: these fields use
+  // tabular figures, which canvas measureText ignores, and the shortfall
+  // clipped the last digit. The span hangs off the function itself because
+  // this function hoists and runs before any binding beside it would exist.
   function sizeToContent(el) {
     if (!el) return;
-    const ctx = sizeToContent.ctx
-      || (sizeToContent.ctx = document.createElement('canvas').getContext('2d'));
+    let m = sizeToContent.mirror;
+    if (!m) {
+      m = sizeToContent.mirror = document.createElement('span');
+      m.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;left:-9999px;top:0';
+      document.body.appendChild(m);
+    }
     const style = getComputedStyle(el);
-    ctx.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
-    const w = ctx.measureText(el.value || el.placeholder || '0').width;
-    el.style.width = Math.ceil(w + 3) + 'px';
+    m.style.font = style.font;
+    m.style.fontVariantNumeric = style.fontVariantNumeric;
+    m.style.letterSpacing = style.letterSpacing;
+    m.textContent = el.value || el.placeholder || '0';
+    el.style.width = Math.ceil(m.getBoundingClientRect().width + 3) + 'px';
   }
   function sizeRateInputs() {
     ['personalTaxRate', 'commissionRate', 'cityRate']
