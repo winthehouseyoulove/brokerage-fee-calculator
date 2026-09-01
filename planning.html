@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831c"></script>
+<script src="page-flash.js?v=20260831d"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -2391,11 +2391,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831c"></script>
-<script src="ohio-tax.js?v=20260831c"></script>
-<script src="ohio-cities.js?v=20260831c"></script>
-<script src="share.js?v=20260831c"></script>
-<script src="agents-embed.js?v=20260831c"></script>
+<script src="fee-math.js?v=20260831d"></script>
+<script src="ohio-tax.js?v=20260831d"></script>
+<script src="ohio-cities.js?v=20260831d"></script>
+<script src="share.js?v=20260831d"></script>
+<script src="agents-embed.js?v=20260831d"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -3263,16 +3263,22 @@
   });
 
   // ---------- Step 3, 4, 5, 6 controls ----------
-  // A rate field is only as wide as the number in it, so the % beside it is
-  // never left floating at the edge of the card.
-  function sizeToContent(el, pad) {
+  // A number field is only as wide as the number in it, so the sign beside it
+  // is never left floating. Measured with the input's own font rather than
+  // counted in ch: a comma is narrower than the "0" that ch approximates, and
+  // the rounding kept leaving formatted amounts a pixel short of their box.
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  function sizeToContent(el) {
     if (!el) return;
-    el.style.width = (Math.max(1, el.value.length) + (pad || 0)) + 'ch';
+    const style = getComputedStyle(el);
+    measureCtx.font = style.fontWeight + ' ' + style.fontSize + ' ' + style.fontFamily;
+    const w = measureCtx.measureText(el.value || el.placeholder || '0').width;
+    el.style.width = Math.ceil(w + 3) + 'px';
   }
   function sizeRateInputs() {
     ['personalTaxRate', 'commissionRate', 'cityRate']
       .forEach(id => sizeToContent(document.getElementById(id)));
-    ['ownerWage', 'entityCost'].forEach(id => sizeToContent(document.getElementById(id), 0.75));
+    ['ownerWage', 'entityCost'].forEach(id => sizeToContent(document.getElementById(id)));
   }
 
   function bindTaxRate(field, inputId, sliderId, tooltipId, side) {
@@ -3332,7 +3338,7 @@
     const isScorp = state.entity === 'scorp';
     document.getElementById('scorpFields').hidden = !isScorp;
     // A field measures zero while its panel is hidden, so size it once shown
-    if (isScorp) ['ownerWage', 'entityCost'].forEach(id => sizeToContent(document.getElementById(id), 0.75));
+    if (isScorp) ['ownerWage', 'entityCost'].forEach(id => sizeToContent(document.getElementById(id)));
     const scorpNote = document.getElementById('scorpNote');
     scorpNote.hidden = !isScorp;
     scorpNote.innerHTML = 'The wage is the part payroll tax reaches, so a lower one saves more. '
@@ -3379,7 +3385,7 @@
     document.getElementById(id).addEventListener('input', (e) => {
       formatWithCommas(e.target);
       state[id] = Number(e.target.value.replace(/,/g, '')) || 0;
-      sizeToContent(e.target, 0.75);
+      sizeToContent(e.target);
       recompute();
     });
   });
