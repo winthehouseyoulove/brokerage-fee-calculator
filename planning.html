@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831g"></script>
+<script src="page-flash.js?v=20260831h"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -2391,11 +2391,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831g"></script>
-<script src="ohio-tax.js?v=20260831g"></script>
-<script src="ohio-cities.js?v=20260831g"></script>
-<script src="share.js?v=20260831g"></script>
-<script src="agents-embed.js?v=20260831g"></script>
+<script src="fee-math.js?v=20260831h"></script>
+<script src="ohio-tax.js?v=20260831h"></script>
+<script src="ohio-cities.js?v=20260831h"></script>
+<script src="share.js?v=20260831h"></script>
+<script src="agents-embed.js?v=20260831h"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -3280,7 +3280,12 @@
       document.body.appendChild(m);
     }
     const style = getComputedStyle(el);
-    m.style.font = style.font;
+    // Longhands, not the font shorthand: the shorthand serializes empty when
+    // font-variant-numeric is set, and the mirror fell back to the body font.
+    m.style.fontFamily = style.fontFamily;
+    m.style.fontSize = style.fontSize;
+    m.style.fontWeight = style.fontWeight;
+    m.style.fontStyle = style.fontStyle;
     m.style.fontVariantNumeric = style.fontVariantNumeric;
     m.style.letterSpacing = style.letterSpacing;
     m.textContent = el.value || el.placeholder || '0';
