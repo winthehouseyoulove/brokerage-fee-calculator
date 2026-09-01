@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831a"></script>
+<script src="page-flash.js?v=20260831b"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -1153,9 +1153,12 @@
     padding: 0;
     font-variant-numeric: tabular-nums;
     height: auto;
-    width: 2.5ch;
+    width: auto;
     min-width: 0;
   }
+  /* The rate fields hold at most a few characters, so they hug them */
+  .trc-col .apc-input input#personalTaxRate,
+  .trc-col .apc-input input#cityRate { width: 2.5ch; }
   .trc-col .apc-suffix {
     font-size: 20px;
     color: var(--muted);
@@ -2388,11 +2391,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831a"></script>
-<script src="ohio-tax.js?v=20260831a"></script>
-<script src="ohio-cities.js?v=20260831a"></script>
-<script src="share.js?v=20260831a"></script>
-<script src="agents-embed.js?v=20260831a"></script>
+<script src="fee-math.js?v=20260831b"></script>
+<script src="ohio-tax.js?v=20260831b"></script>
+<script src="ohio-cities.js?v=20260831b"></script>
+<script src="share.js?v=20260831b"></script>
+<script src="agents-embed.js?v=20260831b"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -3267,7 +3270,9 @@
     el.style.width = (Math.max(1, el.value.length) + (pad || 0)) + 'ch';
   }
   function sizeRateInputs() {
-    ['personalTaxRate', 'commissionRate', 'cityRate'].forEach(id => sizeToContent(document.getElementById(id)));
+    ['personalTaxRate', 'commissionRate', 'cityRate']
+      .forEach(id => sizeToContent(document.getElementById(id)));
+    ['ownerWage', 'entityCost'].forEach(id => sizeToContent(document.getElementById(id), 0.4));
   }
 
   function bindTaxRate(field, inputId, sliderId, tooltipId, side) {
@@ -3326,6 +3331,8 @@
     document.getElementById('flatTaxPanel').hidden = state.taxMode !== 'flat';
     const isScorp = state.entity === 'scorp';
     document.getElementById('scorpFields').hidden = !isScorp;
+    // A field measures zero while its panel is hidden, so size it once shown
+    if (isScorp) ['ownerWage', 'entityCost'].forEach(id => sizeToContent(document.getElementById(id), 0.4));
     const scorpNote = document.getElementById('scorpNote');
     scorpNote.hidden = !isScorp;
     scorpNote.innerHTML = 'The wage is the part payroll tax reaches, so a lower one saves more. '
@@ -3368,10 +3375,11 @@
       recompute();
     });
   });
-  [['ownerWage', 'ownerWage'], ['entityCost', 'entityCost']].forEach(([id, key]) => {
+  ['ownerWage', 'entityCost'].forEach(id => {
     document.getElementById(id).addEventListener('input', (e) => {
       formatWithCommas(e.target);
-      state[key] = Number(e.target.value.replace(/,/g, '')) || 0;
+      state[id] = Number(e.target.value.replace(/,/g, '')) || 0;
+      sizeToContent(e.target, 0.4);
       recompute();
     });
   });
