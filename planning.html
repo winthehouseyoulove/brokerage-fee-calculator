@@ -1840,7 +1840,7 @@
           <div class="trc-sublabel">Per year, after tax</div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
-            <input type="text" inputmode="numeric" id="goalTakeHome" value="80,000" />
+            <input type="text" inputmode="numeric" id="goalTakeHome" value="100,000" />
           </div>
           <p class="sp-hint">What your whole household needs to live on for the year, after tax. Everyone's income counts toward it, not just yours.</p>
         </div>
@@ -1858,7 +1858,7 @@
           <div class="trc-sublabel">Per year</div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
-            <input type="text" inputmode="numeric" id="simpleBusiness" value="15,096" />
+            <input type="text" inputmode="numeric" id="simpleBusiness" value="5,000" />
           </div>
           <p class="sp-hint">Everything you spend running the business outside the brokerage.</p>
         </div>
@@ -2163,8 +2163,8 @@
     ],
     mode: 'simple',
     // Simple mode carries annual figures instead of the itemised monthly lists
-    goalTakeHome: 80000,
-    simpleBusiness: 15096,
+    goalTakeHome: 100000,
+    simpleBusiness: 5000,
     simpleOtherIncome: 0,
     // True once the user has typed in the take-home fields themselves, so
     // flipping to the detailed breakdown and back cannot overwrite them.
@@ -3096,8 +3096,9 @@
   }
   document.querySelector('.mt-btn[data-mode="simple"]').addEventListener('click', () => {
     // Take-home is the default way in, so numbers the user typed here outrank
-    // the itemised lists they may have opened out of curiosity.
-    if (!state.simpleEdited) seedSimpleFromDetailed();
+    // the itemised lists they may have opened out of curiosity, and untouched
+    // lists are not "their numbers" to carry across at all.
+    if (!state.simpleEdited && state.touched) seedSimpleFromDetailed();
     recompute();
   });
   ['goalTakeHome', 'simpleBusiness', 'simpleOtherIncome'].forEach(id => {
