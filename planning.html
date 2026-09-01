@@ -33,7 +33,10 @@
   .funnel-tier.t1 { animation-delay: 0.00s; }
   .funnel-flow:nth-of-type(2) { animation-delay: 0.05s; }
   .tax-mode, .tax-status {
-    display: inline-flex;
+    display: flex;
+    align-self: flex-start;
+    width: fit-content;
+    height: 38px;
     border: 1px solid var(--border);
     background: var(--card);
     margin-bottom: 12px;
@@ -42,11 +45,12 @@
     font-family: inherit;
     background: none;
     border: none;
-    padding: 7px 12px;
+    padding: 0 14px;
     font-size: 12px;
     font-weight: 600;
     color: var(--muted);
     cursor: pointer;
+    white-space: nowrap;
   }
   .tm-btn + .tm-btn, .ts-btn + .ts-btn { border-left: 1px solid var(--border); }
   .tm-btn.is-on, .ts-btn.is-on { background: var(--remax-blue); color: var(--bg); }
@@ -139,33 +143,32 @@
     align-items: baseline;
     gap: 12px;
     padding: 7px 0;
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
   }
+  .tb-head + .tb-row { border-top: none; }
   .tb-row span:first-child { color: var(--muted); }
   .tb-row span:last-child { font-weight: 600; }
   .tb-row.tb-total {
-    border-bottom: none;
     border-top: 2px solid var(--text);
     padding-top: 10px;
     margin-top: 2px;
   }
-  .tb-total .tb-label {
+  .tb-row.tb-rate {
+    border-top: none;
+    padding-top: 0;
+    align-items: center;
+  }
+  .tb-total .tb-label, .tb-rate .tb-label {
     font-size: 13px;
     font-weight: 700;
     color: var(--text);
   }
-  .tb-total .tb-answer {
-    font-size: 24px;
+  .tb-total .tb-sum { font-size: 15px; font-weight: 700; color: var(--text); }
+  .tb-rate .tb-answer {
+    font-size: 26px;
     font-weight: 700;
     color: var(--remax-red);
     line-height: 1.1;
-  }
-  .tb-total .tb-answer small {
-    display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-    text-align: right;
   }
   .tb-none { color: var(--win); font-weight: 600; }
   /* The ? is designed for the dark tiers; on a white card it needs its own */
@@ -250,7 +253,7 @@
   /* One link for the whole scenario, reachable from either page */
   .save-dock {
     position: fixed;
-    right: max(20px, calc((100vw - 1100px) / 2 + 20px));
+    right: 20px;
     bottom: 20px;
     z-index: 900;
     display: flex;
@@ -2899,10 +2902,11 @@
         + row('Ohio income tax', t.ohioTax, t.ohioTax === 0 ? 'Nothing, deducted' : '')
         + row('City income tax' + (state.cityName ? ', ' + state.cityName : '')
               + ' at ' + state.cityRate + '%', t.cityTax)
-        + '<div class="tb-row tb-total">'
-          + '<span class="tb-label">All four together<span class="tier-info" id="taxInfo" tabindex="0">?</span></span>'
-          + '<span class="tb-answer">' + shownRate.toFixed(1) + '%'
-            + '<small>' + fmt(t.total) + ' of ' + fmt(t.profit) + '</small></span>'
+        + '<div class="tb-row tb-total"><span class="tb-label">Total tax</span>'
+          + '<span class="tb-sum">' + fmt(t.total) + '</span></div>'
+        + '<div class="tb-row tb-rate">'
+          + '<span class="tb-label">Combined tax rate<span class="tier-info" id="taxInfo" tabindex="0">?</span></span>'
+          + '<span class="tb-answer">' + shownRate.toFixed(1) + '%</span>'
         + '</div>';
       // The ? is rebuilt with the row, so it is rebound each time
       bindInfo('taxInfo', 'taxTooltip');
@@ -3270,8 +3274,8 @@
     note.innerHTML = state.cityName
       ? 'City tax lands on every dollar of profit: municipalities have no equivalent of Ohio\'s Business Income Deduction.'
       : 'Starting at the <strong>' + avg + '%</strong> average of ' + OhioCities.CITIES.length
-        + ' Ohio municipalities. Pick yours, or type a rate: not every municipality is listed, '
-        + 'and a missing one is not a city without a tax.';
+        + ' Ohio municipalities, from the state\'s own rate table. Pick yours, or type a rate. '
+        + 'Townships do not levy an income tax, so there is nothing to enter if you live outside a city.';
   }
 
   function renderCityResults(matches) {
