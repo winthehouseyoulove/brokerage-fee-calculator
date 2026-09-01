@@ -8,6 +8,7 @@
   'use strict';
 
   const FM = global.FeeMath || require('./fee-math.js');
+  const OT = global.OhioTax || require('./ohio-tax.js');
   const NO_STRESS = FM.PLANS.noStress;   // 80/20, $17,000 cap, then 95/5, $50/mo
   const EXECUTIVE = FM.PLANS.executive;  // 90/10, $9,000 cap, then 95/5, $500/mo
 
@@ -186,6 +187,84 @@
       ok(!s.feasible, `target ${t}, commission ${c}, price ${p} should not be feasible`);
       eq(s.transactions, 0, 'transactions');
     });
+  });
+
+  // ---------- Ohio tax estimate ----------
+  // Worked by hand from the sources cited in ohio-tax.js.
+  test('Ohio tax', 'A single agent on $100,000 of profit in a 2.25% city', () => {
+    const r = OT.estimate(100000, { filingStatus: 'single', cityRate: 2.25 });
+    // 92.35% of 100,000 is 92,350 of net earnings
+    eq(r.socialSecurity, 92350 * 0.124, 'Social Security');   // 11,451.40
+    eq(r.medicare, 92350 * 0.029, 'Medicare');                // 2,678.15
+    eq(r.additionalMedicare, 0, 'Additional Medicare');
+    eq(r.seTax, 14129.55, 'self-employment tax');
+    // AGI 92,935.23, less the 16,100 standard deduction, is 76,835.23 taxable
+    eq(r.federalTax, 1240 + 4560 + 0.22 * (76835.225 - 50400), 'federal tax'); // 11,615.75
+    eq(r.ohioTax, 0, 'Ohio tax');
+    eq(r.cityTax, 2250, 'city tax');
+    eq(r.total, 27995.30, 'total tax');
+    ok(Math.abs(r.effectiveRate - 0.2800) < 0.0005, `effective rate came out ${r.effectiveRate}`);
+  });
+
+  test('Ohio tax', 'Social Security stops at the wage base, Medicare does not', () => {
+    const base = OT.SE.socialSecurityWageBase;               // 184,500 for 2026
+    const atCap = OT.estimate(base / 0.9235, { filingStatus: 'single' });
+    const wayOver = OT.estimate(600000, { filingStatus: 'single' });
+    eq(atCap.socialSecurity, base * 0.124, 'Social Security at the cap');
+    eq(wayOver.socialSecurity, base * 0.124, 'Social Security far above the cap');
+    ok(wayOver.medicare > atCap.medicare * 2, 'Medicare should keep climbing');
+  });
+
+  test('Ohio tax', 'Additional Medicare starts at the filing threshold, not before', () => {
+    const under = OT.estimate(200000, { filingStatus: 'single' });   // 184,700 of net earnings
+    const over = OT.estimate(300000, { filingStatus: 'single' });
+    eq(under.additionalMedicare, Math.max(0, 200000 * 0.9235 - 200000) * 0.009, 'below the threshold');
+    eq(over.additionalMedicare, (300000 * 0.9235 - 200000) * 0.009, 'above the threshold');
+    const mfj = OT.estimate(300000, { filingStatus: 'mfj' });
+    eq(mfj.additionalMedicare, (300000 * 0.9235 - 250000) * 0.009, 'joint threshold is higher');
+  });
+
+  test('Ohio tax', 'Ohio charges nothing until business income passes the deduction', () => {
+    eq(OT.estimate(150000, { filingStatus: 'single' }).ohioTax, 0, 'Ohio tax at $150,000');
+    eq(OT.estimate(250000, { filingStatus: 'single' }).ohioTax, 0, 'Ohio tax at the deduction');
+    eq(OT.estimate(300000, { filingStatus: 'single' }).ohioTax, 50000 * 0.03, 'Ohio tax above it');
+  });
+
+  test('Ohio tax', 'City tax is charged on every dollar of profit', () => {
+    [50000, 400000].forEach(profit => {
+      const none = OT.estimate(profit, { filingStatus: 'single', cityRate: 0 });
+      const taxed = OT.estimate(profit, { filingStatus: 'single', cityRate: 2 });
+      eq(taxed.cityTax - none.cityTax, profit * 0.02, `city tax on ${profit}`);
+    });
+  });
+
+  test('Ohio tax', 'QBI is off unless asked for, and lowers the bill when on', () => {
+    const off = OT.estimate(120000, { filingStatus: 'single' });
+    const on = OT.estimate(120000, { filingStatus: 'single', qbi: true });
+    eq(off.qbiDeduction, 0, 'QBI when not asked for');
+    ok(on.qbiDeduction > 0, 'QBI when asked for');
+    ok(on.federalTax < off.federalTax, 'QBI should lower federal tax');
+    eq(on.seTax, off.seTax, 'QBI must not touch self-employment tax');
+  });
+
+  test('Ohio tax', 'Grossing up inverts the estimate at every size', () => {
+    [20000, 80000, 150000, 400000].forEach(target => {
+      const opts = { filingStatus: 'mfj', cityRate: 2.25 };
+      const gross = OT.grossUp(target, opts);
+      const back = OT.estimate(gross, opts).takeHome;
+      ok(Math.abs(back - target) < 1, `grossing up ${target} came back as ${back}`);
+    });
+  });
+
+  test('Ohio tax', 'Every figure adds up, and earning more never nets less', () => {
+    let prev = -Infinity;
+    for (let profit = 0; profit <= 500000; profit += 10000) {
+      const r = OT.estimate(profit, { filingStatus: 'single', cityRate: 2.25 });
+      eq(r.total, r.seTax + r.federalTax + r.ohioTax + r.cityTax, `total at ${profit}`);
+      eq(r.takeHome, profit - r.total, `take-home at ${profit}`);
+      ok(r.takeHome >= prev, `take-home fell at ${profit}`);
+      prev = r.takeHome;
+    }
   });
 
   function run() {

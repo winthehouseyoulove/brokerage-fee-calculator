@@ -32,6 +32,44 @@
   }
   .funnel-tier.t1 { animation-delay: 0.00s; }
   .funnel-flow:nth-of-type(2) { animation-delay: 0.05s; }
+  .tax-mode, .tax-status {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    background: var(--card);
+    margin-bottom: 12px;
+  }
+  .tm-btn, .ts-btn {
+    font-family: inherit;
+    background: none;
+    border: none;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .tm-btn + .tm-btn, .ts-btn + .ts-btn { border-left: 1px solid var(--border); }
+  .tm-btn.is-on, .ts-btn.is-on { background: var(--remax-blue); color: var(--bg); }
+  .tax-status { margin-bottom: 0; }
+  .tax-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+    margin: 12px 0 4px;
+  }
+  .tax-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .apc-input-small input { font-size: 18px; }
+  .apc-input-small .apc-suffix { font-size: 15px; }
+  .trc-note a { color: var(--remax-blue); }
+
   .tax-rate-card { animation-delay: 0.10s; }
   .funnel-flow:nth-of-type(4) { animation-delay: 0.15s; }
   .funnel-tier.t2 { animation-delay: 0.20s; }
@@ -689,7 +727,8 @@
     border-right: 6px solid transparent;
     border-top: 6px solid #000e35;
   }
-  .funnel-tier.show-tooltip .tier-tooltip {
+  .trc-col { position: relative; }
+  .show-tooltip .tier-tooltip {
     visibility: visible;
     transform: translate(-50%, -100%) translateY(0);
   }
@@ -1932,14 +1971,48 @@
         <div class="tax-rate-card">
           <div class="trc-col">
             <div class="tax-tooltip" id="personalTaxTooltip"></div>
-            <div class="apc-label">Personal Tax Rate</div>
-            <div class="trc-sublabel">Income + self-employment</div>
-            <div class="apc-input">
-              <input type="text" inputmode="decimal" id="personalTaxRate" value="27" />
-              <span class="apc-suffix">%</span>
+            <div class="tax-mode" role="group" aria-label="How to figure tax">
+              <button type="button" class="tm-btn is-on" data-tax="ohio">Estimate it for Ohio</button>
+              <button type="button" class="tm-btn" data-tax="flat">Use my own rate</button>
             </div>
-            <input type="range" id="personalTaxSlider" class="apc-slider" min="0" max="40" step="1" value="27" />
-            <p class="trc-note">Use your all-in rate, not just your income bracket. Self-employment tax lands on top of it.</p>
+
+            <div id="ohioTaxPanel">
+              <div class="tier-tooltip wide" id="taxTooltip"></div>
+              <div class="apc-label">Your Tax Rate<span class="tier-info" id="taxInfo" tabindex="0">?</span></div>
+              <div class="trc-sublabel">Federal, self-employment, Ohio and city</div>
+              <div class="apc-input">
+                <span class="trc-locked" id="ohioEffective">0</span>
+                <span class="apc-suffix">%</span>
+              </div>
+              <div class="tax-fields">
+                <div class="tax-field">
+                  <label>Filing status</label>
+                  <div class="tax-status" role="group" aria-label="Filing status">
+                    <button type="button" class="ts-btn is-on" data-status="single">Single</button>
+                    <button type="button" class="ts-btn" data-status="mfj">Married, joint</button>
+                  </div>
+                </div>
+                <div class="tax-field">
+                  <label for="cityRate">City income tax</label>
+                  <div class="apc-input apc-input-small">
+                    <input type="text" inputmode="decimal" id="cityRate" value="2.25" />
+                    <span class="apc-suffix">%</span>
+                  </div>
+                </div>
+              </div>
+              <p class="trc-note">Ohio charges nothing on the first $250,000 of business income, so most of this is federal and self-employment tax. Your city is the part that varies: look yours up in the <a href="https://www.ritaohio.com/TaxRatesTable" target="_blank" rel="noopener">RITA rate table</a>.</p>
+            </div>
+
+            <div id="flatTaxPanel" hidden>
+              <div class="apc-label">Personal Tax Rate</div>
+              <div class="trc-sublabel">Income + self-employment</div>
+              <div class="apc-input">
+                <input type="text" inputmode="decimal" id="personalTaxRate" value="27" />
+                <span class="apc-suffix">%</span>
+              </div>
+              <input type="range" id="personalTaxSlider" class="apc-slider" min="0" max="40" step="1" value="27" />
+              <p class="trc-note">Use your all-in rate, not just your income bracket. Self-employment tax lands on top of it.</p>
+            </div>
           </div>
           <div class="trc-col">
             <div class="apc-label">Business Tax Rate</div>
@@ -2128,6 +2201,7 @@
 </footer>
 
 <script src="fee-math.js"></script>
+<script src="ohio-tax.js"></script>
 <script src="share.js"></script>
 <script src="agents-embed.js"></script>
 <script>
@@ -2171,6 +2245,12 @@
     simpleEdited: false,
     personalTaxRate: 27,
     businessTaxRate: 0,
+    // 'ohio' works the bill out from the brackets; 'flat' is the old single
+    // all-in rate, kept for agents outside Ohio and as a sanity check.
+    taxMode: 'ohio',
+    filingStatus: 'single',
+    // Municipal rates vary by city; Dayton area runs roughly 2% to 2.5%.
+    cityRate: 2.25,
     commissionRate: 3,
     avgPrice: medianAvgPrice(),
     // The agent whose own average sale price is driving the number above.
@@ -2477,7 +2557,8 @@
     // on what is left after the brokerage and business costs, not on the whole
     // commission, so it names its own base instead of the trunk.
     const ofGci = (v) => Math.round(100 * v / gci) + '% of GCI';
-    const taxBasis = Math.round(state.personalTaxRate) + '% of the ' + fmt(taxable) + ' taxed';
+    const taxBasis = (tax > 0 && taxable > 0 ? (100 * tax / taxable).toFixed(1) : '0')
+      + '% of the ' + fmt(taxable) + ' taxed';
     const finals = [
       { name: 'Your life', value: life, fill: RED, note: ofGci(life) },
       { name: 'Surplus', value: surplus, fill: AMBER, note: ofGci(surplus) },
@@ -2542,9 +2623,34 @@
     document.getElementById('flowDesc').textContent =
       'Read it left to right, in the order the money actually leaves. The brokerage '
       + 'takes its cut first, then your business costs come out of what you keep. '
-      + 'Neither one is taxed, which is why your ' + state.personalTaxRate + '% rate is charged on '
+      + 'Neither one is taxed, which is why your rate is charged on '
       + fmt(taxable) + ' rather than on the whole ' + fmt(gci) + '. Surplus is what the extra '
       + 'whole deal leaves over, after tax.';
+  }
+
+  // ---------- Tax ----------
+  // Both modes answer the same two questions: what does tax take out of this
+  // amount, and what would you have to earn to keep that amount after it.
+  const taxOpts = () => ({ filingStatus: state.filingStatus, cityRate: state.cityRate });
+
+  function taxOn(amount) {
+    if (state.taxMode === 'ohio') return OhioTax.estimate(amount, taxOpts()).total;
+    return Math.max(0, amount) * (state.personalTaxRate / 100);
+  }
+
+  function grossUpPersonal(target) {
+    if (target <= 0) return 0;
+    if (state.taxMode === 'ohio') return OhioTax.grossUp(target, taxOpts());
+    const rate = state.personalTaxRate / 100;
+    return rate < 1 ? target / (1 - rate) : 0;
+  }
+
+  // The rate to print and to narrate with: in Ohio mode it falls out of the
+  // brackets rather than being typed in, so it moves with the plan.
+  function effectiveRatePct(profit) {
+    if (state.taxMode !== 'ohio') return state.personalTaxRate;
+    if (!(profit > 0)) return 0;
+    return OhioTax.estimate(profit, taxOpts()).effectiveRate * 100;
   }
 
   // ---------- What the year has to cover ----------
@@ -2590,6 +2696,7 @@
       mode: state.mode, goalTakeHome: state.goalTakeHome, simpleBusiness: state.simpleBusiness,
       simpleOtherIncome: state.simpleOtherIncome, simpleEdited: state.simpleEdited,
       personalTaxRate: state.personalTaxRate, commissionRate: state.commissionRate,
+      taxMode: state.taxMode, filingStatus: state.filingStatus, cityRate: state.cityRate,
       avgPrice: state.avgPrice, agentName: state.agentName,
       selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
       touched: true,
@@ -2629,11 +2736,12 @@
     // line beneath mentioned other income meant the headline never moved when
     // that income was entered.
     const minimumIncome = personalToEarn + businessAnnual;
-    const personalTaxRate = state.personalTaxRate / 100;
     const businessTaxRate = state.businessTaxRate / 100;
-    const personalGrossed = personalTaxRate < 1 ? personalToEarn / (1 - personalTaxRate) : 0;
+    const personalGrossed = grossUpPersonal(personalToEarn);
     const businessGrossed = businessTaxRate < 1 ? businessAnnual / (1 - businessTaxRate) : 0;
     const grossedUp = personalGrossed + businessGrossed;
+    // What that gross-up implies as a rate, for the labels and the money flow
+    const shownRate = effectiveRatePct(personalGrossed);
     const avgPrice = state.avgPrice;
 
     // Render the 2 RE/MAX plan cards embedded in the funnel, and grab the
@@ -2656,6 +2764,20 @@
     // Funnel tiers — update with a brief pulse if the value actually changed
     setAndPulse('minimumIncome', fmt(minimumIncome));
     setAndPulse('grossedUp', fmt(grossedUp));
+
+    // The Ohio panel prints the rate the brackets produced, and its ? breaks
+    // the bill into the four things that make it up.
+    const effEl = document.getElementById('ohioEffective');
+    if (effEl) effEl.textContent = shownRate.toFixed(1);
+    if (state.taxMode === 'ohio') {
+      const t = OhioTax.estimate(personalGrossed, taxOpts());
+      setTooltip('taxTooltip',
+        'On ' + fmt(t.profit) + ' of profit: ' + fmt(t.seTax) + ' self-employment, '
+          + fmt(t.federalTax) + ' federal, ' + fmt(t.ohioTax) + ' Ohio, '
+          + fmt(t.cityTax) + ' city at ' + state.cityRate + '%'
+          + (t.ohioTax === 0 ? '. Ohio is nothing because the Business Income Deduction covers the first $250,000.' : '.'),
+        '= ' + fmt(t.total) + ', or ' + shownRate.toFixed(1) + '% of what you earn');
+    }
     setAndPulse('requiredVolume', fmt(requiredVolume));
     const volTooltip = document.getElementById('volumeTooltip');
     if (volTooltip) {
@@ -2678,7 +2800,7 @@
         + ' + ' + fmt(businessAnnual) + ' business',
       '= ' + fmt(minimumIncome) + ' real estate has to cover');
     setTooltip('grossTooltip',
-      fmt(personalToEarn) + ' personal ÷ (1 − ' + state.personalTaxRate + '% tax) = '
+      fmt(personalToEarn) + ' personal ÷ (1 − ' + shownRate.toFixed(1) + '% tax) = '
         + fmt(personalGrossed) + ', plus ' + fmt(businessAnnual)
         + ' of business costs, which are written off rather than grossed up',
       '= ' + fmt(grossedUp) + ' before tax');
@@ -2744,7 +2866,7 @@
     // Money flow: GCI splits into brokerage, business costs, tax and pocket
     const brokerageCost = Math.max(0, (best.gci || 0) - (best.net || 0));
     const taxableAfterCosts = Math.max(0, (best.net || 0) - businessAnnual);
-    const taxCost = taxableAfterCosts * personalTaxRate;
+    const taxCost = taxOn(taxableAfterCosts);
     const pocket = taxableAfterCosts - taxCost;
     const lifeShare = Math.min(personalToEarn, pocket);
     renderFlow(best.gci || 0, brokerageCost, businessAnnual, taxCost,
@@ -2778,7 +2900,9 @@
     document.getElementById('simpleOtherIncome').value = state.simpleOtherIncome.toLocaleString('en-US');
     const search = document.getElementById('agentSearch');
     if (search) search.value = state.agentName || '';
+    document.getElementById('cityRate').value = String(state.cityRate);
     sizeRateInputs();
+    applyTaxMode();
     applyMode();
   }
 
@@ -2892,7 +3016,7 @@
     el.style.width = (Math.max(1, el.value.length) + (pad || 0)) + 'ch';
   }
   function sizeRateInputs() {
-    ['personalTaxRate', 'commissionRate'].forEach(id => sizeToContent(document.getElementById(id)));
+    ['personalTaxRate', 'commissionRate', 'cityRate'].forEach(id => sizeToContent(document.getElementById(id)));
   }
 
   function bindTaxRate(field, inputId, sliderId, tooltipId, side) {
@@ -2944,6 +3068,41 @@
     input.addEventListener('blur', scheduleHide);
   }
   bindTaxRate('personalTaxRate', 'personalTaxRate', 'personalTaxSlider', 'personalTaxTooltip', 'personal');
+
+  // ---------- Ohio estimate controls ----------
+  function applyTaxMode() {
+    document.getElementById('ohioTaxPanel').hidden = state.taxMode !== 'ohio';
+    document.getElementById('flatTaxPanel').hidden = state.taxMode !== 'flat';
+    document.querySelectorAll('.tm-btn').forEach(b => {
+      b.classList.toggle('is-on', b.dataset.tax === state.taxMode);
+      b.setAttribute('aria-pressed', String(b.dataset.tax === state.taxMode));
+    });
+    document.querySelectorAll('.ts-btn').forEach(b => {
+      b.classList.toggle('is-on', b.dataset.status === state.filingStatus);
+      b.setAttribute('aria-pressed', String(b.dataset.status === state.filingStatus));
+    });
+  }
+  document.querySelectorAll('.tm-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.taxMode = btn.dataset.tax;
+      state.touched = true;
+      applyTaxMode();
+      recompute();
+    });
+  });
+  document.querySelectorAll('.ts-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.filingStatus = btn.dataset.status;
+      state.touched = true;
+      applyTaxMode();
+      recompute();
+    });
+  });
+  document.getElementById('cityRate').addEventListener('input', (e) => {
+    state.cityRate = Number(e.target.value) || 0;
+    sizeToContent(e.target);
+    recompute();
+  });
   // Business side is fixed at 0% on purpose: expenses are deducted before tax,
   // so a dollar of expense needs exactly a dollar of revenue. No slider to get wrong.
 
@@ -2951,7 +3110,7 @@
   // hover does not exist on a phone.
   function bindInfo(infoId, tipId) {
     const info = document.getElementById(infoId);
-    const tier = info && info.closest('.funnel-tier');
+    const tier = info && (info.closest('.funnel-tier') || info.closest('.trc-col'));
     const tip = document.getElementById(tipId);
     if (!info || !tier || !tip) return;
     function position() {
@@ -2978,8 +3137,9 @@
   bindInfo('grossInfo', 'grossTooltip');
   bindInfo('volumeInfo', 'volumeTooltip');
   bindInfo('dealsInfo', 'dealsTooltip');
+  bindInfo('taxInfo', 'taxTooltip');
   document.addEventListener('click', () => {
-    document.querySelectorAll('.funnel-tier.show-tooltip').forEach(t => t.classList.remove('show-tooltip'));
+    document.querySelectorAll('.show-tooltip').forEach(t => t.classList.remove('show-tooltip'));
   });
 
   // ---------- Progressive reveal ----------
@@ -3299,6 +3459,9 @@
     state.simpleBusiness = 0;
     state.simpleOtherIncome = 0;
     state.personalTaxRate = DEFAULTS.personalTaxRate;
+    state.taxMode = DEFAULTS.taxMode;
+    state.filingStatus = DEFAULTS.filingStatus;
+    state.cityRate = DEFAULTS.cityRate;
     state.commissionRate = DEFAULTS.commissionRate;
     state.avgPrice = DEFAULTS.avgPrice;
     state.simpleEdited = true;
