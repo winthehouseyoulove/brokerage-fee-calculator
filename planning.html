@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831i"></script>
+<script src="page-flash.js?v=20260831j"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -2391,11 +2391,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831i"></script>
-<script src="ohio-tax.js?v=20260831i"></script>
-<script src="ohio-cities.js?v=20260831i"></script>
-<script src="share.js?v=20260831i"></script>
-<script src="agents-embed.js?v=20260831i"></script>
+<script src="fee-math.js?v=20260831j"></script>
+<script src="ohio-tax.js?v=20260831j"></script>
+<script src="ohio-cities.js?v=20260831j"></script>
+<script src="share.js?v=20260831j"></script>
+<script src="agents-embed.js?v=20260831j"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -2983,7 +2983,7 @@
       document.getElementById('taxBreakdown').innerHTML =
         '<div class="tb-head">What you would owe on ' + fmt(t.profit) + ' of profit</div>'
         + (state.entity === 'scorp'
-            ? row('Payroll tax on your ' + fmt(t.wage) + ' wage', t.payrollTax)
+            ? row('Payroll tax on your ' + fmt(t.wage) + ' wage, replacing self-employment tax', t.payrollTax)
               + row('Payroll service and filing', t.entityCost)
             : row('Self-employment tax', t.seTax))
         + row('Federal income tax', t.federalTax)
@@ -3021,7 +3021,11 @@
           + ' Reasonable compensation is set by your CPA, not by this page, and the answer moves with it.';
 
       setTooltip('taxTooltip',
-        'Self-employment tax is 15.3% on 92.35% of what you earn, with Social Security capped. '
+        (state.entity === 'scorp'
+          ? 'An S corporation has no self-employment tax. Payroll tax replaces it: the same '
+            + '15.3%, but charged on your wage alone, and the distribution escapes it, which '
+            + 'is the entire saving. '
+          : 'Self-employment tax is 15.3% on 92.35% of what you earn, with Social Security capped. ')
           + 'Federal is the 2026 brackets after the standard deduction. '
           + (t.ohioTax === 0
               ? 'Ohio is nothing: the Business Income Deduction covers the first $250,000 of business income.'
