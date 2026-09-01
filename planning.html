@@ -41,7 +41,7 @@
     background: var(--card);
     margin-bottom: 12px;
   }
-  .tm-btn, .ts-btn {
+  .tm-btn, .ts-btn, .te-btn {
     font-family: inherit;
     background: none;
     border: none;
@@ -52,8 +52,8 @@
     cursor: pointer;
     white-space: nowrap;
   }
-  .tm-btn + .tm-btn, .ts-btn + .ts-btn { border-left: 1px solid var(--border); }
-  .tm-btn.is-on, .ts-btn.is-on { background: var(--remax-blue); color: var(--bg); }
+  .tm-btn + .tm-btn, .ts-btn + .ts-btn, .te-btn + .te-btn { border-left: 1px solid var(--border); }
+  .tm-btn.is-on, .ts-btn.is-on, .te-btn.is-on { background: var(--remax-blue); color: var(--bg); }
   .tax-status { margin-bottom: 0; }
   .tax-fields {
     display: flex;
@@ -177,6 +177,24 @@
     color: var(--text);
   }
   .trc-col .tier-info:hover, .trc-col .tier-info:focus { background: #d8d2bd; }
+  .scorp-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+    margin: 4px 0 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .scorp-compare {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    background: var(--bg);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .scorp-compare strong { font-weight: 700; }
+  .scorp-compare.is-worse strong { color: var(--win); }
   .apc-input-small input { font-size: 18px; }
   .apc-input-small .apc-suffix { font-size: 15px; }
   .trc-note a { color: var(--remax-blue); }
@@ -2125,6 +2143,13 @@
                     <button type="button" class="ts-btn" data-status="mfj">Married, joint</button>
                   </div>
                 </div>
+                <div class="tax-field">
+                  <label>How you are set up</label>
+                  <div class="tax-status" role="group" aria-label="Business structure">
+                    <button type="button" class="te-btn is-on" data-entity="sole">Sole proprietor or LLC</button>
+                    <button type="button" class="te-btn" data-entity="scorp">S corporation</button>
+                  </div>
+                </div>
                 <div class="tax-field tax-field-city">
                   <label for="citySearch">Your city, and its rate</label>
                   <div class="city-group">
@@ -2147,7 +2172,26 @@
               </div>
               <p class="trc-note" id="cityNote"></p>
 
+              <div class="scorp-fields" id="scorpFields" hidden>
+                <div class="tax-field">
+                  <label for="ownerWage">Your W-2 wage</label>
+                  <div class="apc-input apc-input-small">
+                    <span class="apc-prefix">$</span>
+                    <input type="text" inputmode="numeric" id="ownerWage" value="60,000" />
+                  </div>
+                </div>
+                <div class="tax-field">
+                  <label for="entityCost">Payroll and filing, per year</label>
+                  <div class="apc-input apc-input-small">
+                    <span class="apc-prefix">$</span>
+                    <input type="text" inputmode="numeric" id="entityCost" value="1,500" />
+                  </div>
+                </div>
+              </div>
+              <p class="trc-note" id="scorpNote" hidden></p>
+
               <div class="tax-breakdown" id="taxBreakdown"></div>
+              <p class="scorp-compare" id="scorpCompare" hidden></p>
 
               <p class="trc-note">Business expenses never appear here. They come off before tax, so a dollar of expense costs a dollar of revenue and nothing more, which is why there is no rate to set for them.</p>
             </div>
@@ -2337,8 +2381,11 @@
 <footer>
   Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026. Monthly fees
   are plan fees only; MLS dues are a separate business expense above, defaulted to $50 a month.
-  The tax rate is a planning estimate, not tax advice. Your real rate depends on your filing
-  status, your state, and which deductions you qualify for. Confirm it with your CPA.
+  The tax figures are a planning estimate, not tax advice, and the S corporation comparison
+  is a sketch of the tradeoff rather than a recommendation. It leaves out retirement
+  contributions, health insurance and anything else you deduct, and the wage it uses is a
+  number you typed, not reasonable compensation worked out for your situation. Whether to
+  elect, and at what wage, is a decision for your CPA.
 </footer>
 
 <script src="fee-math.js"></script>
@@ -2391,6 +2438,11 @@
     // all-in rate, kept for agents outside Ohio and as a sanity check.
     taxMode: 'ohio',
     filingStatus: 'single',
+    // 'sole' covers a sole proprietor and a single-member LLC, which the IRS
+    // treats the same way. 'scorp' is an S corporation election.
+    entity: 'sole',
+    ownerWage: 60000,
+    entityCost: 1500,
     // Starts at the average of the municipalities in ohio-cities.js. Picking a
     // city replaces it with that city's own rate.
     cityRate: Math.round(OhioCities.average * 100) / 100,
@@ -2775,7 +2827,13 @@
   // ---------- Tax ----------
   // Both modes answer the same two questions: what does tax take out of this
   // amount, and what would you have to earn to keep that amount after it.
-  const taxOpts = () => ({ filingStatus: state.filingStatus, cityRate: state.cityRate });
+  const taxOpts = () => ({
+    filingStatus: state.filingStatus,
+    cityRate: state.cityRate,
+    entity: state.entity,
+    wage: state.ownerWage,
+    entityCost: state.entityCost,
+  });
 
   function taxOn(amount) {
     if (state.taxMode === 'ohio') return OhioTax.estimate(amount, taxOpts()).total;
@@ -2842,6 +2900,7 @@
       personalTaxRate: state.personalTaxRate, commissionRate: state.commissionRate,
       taxMode: state.taxMode, filingStatus: state.filingStatus,
       cityRate: state.cityRate, cityName: state.cityName,
+      entity: state.entity, ownerWage: state.ownerWage, entityCost: state.entityCost,
       avgPrice: state.avgPrice, agentName: state.agentName,
       selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
       touched: true,
@@ -2920,7 +2979,10 @@
         + (note ? '<span class="tb-none">' + note + '</span>' : fmt(value)) + '</span></div>';
       document.getElementById('taxBreakdown').innerHTML =
         '<div class="tb-head">What you would owe on ' + fmt(t.profit) + ' of profit</div>'
-        + row('Self-employment tax', t.seTax)
+        + (state.entity === 'scorp'
+            ? row('Payroll tax on your ' + fmt(t.wage) + ' wage', t.payrollTax)
+              + row('Payroll service and filing', t.entityCost)
+            : row('Self-employment tax', t.seTax))
         + row('Federal income tax', t.federalTax)
         + row('Ohio income tax', t.ohioTax, t.ohioTax === 0 ? 'Nothing, deducted' : '')
         + row('City income tax' + (state.cityName ? ', ' + state.cityName : '')
@@ -2933,6 +2995,26 @@
         + '</div>';
       // The ? is rebuilt with the row, so it is rebound each time
       bindInfo('taxInfo', 'taxTooltip');
+
+      // What the other structure would cost on the same profit, with the
+      // running costs in it. Shown both ways round, because below a certain
+      // profit the election loses money and the tool should say so.
+      const compare = document.getElementById('scorpCompare');
+      const other = OhioTax.estimate(personalGrossed,
+        Object.assign(taxOpts(), { entity: state.entity === 'scorp' ? 'sole' : 'scorp' }));
+      const gap = other.total - t.total;
+      compare.hidden = false;
+      compare.classList.toggle('is-worse', gap < 0);
+      const otherName = state.entity === 'scorp' ? 'staying a sole proprietor' : 'an S corporation election';
+      // Naming the profit matters: each structure needs a different one to hit
+      // the same take-home, so "this profit" would be two different numbers.
+      const on = 'On ' + fmt(t.profit) + ' of profit, ';
+      compare.innerHTML = Math.abs(gap) < 1
+        ? on + 'it makes no difference either way.'
+        : (gap > 0
+            ? on + otherName + ' would cost <strong>' + fmt(Math.abs(gap)) + ' more</strong> a year.'
+            : on + otherName + ' would cost <strong>' + fmt(Math.abs(gap)) + ' less</strong> a year.')
+          + ' Reasonable compensation is set by your CPA, not by this page, and the answer moves with it.';
 
       setTooltip('taxTooltip',
         'Self-employment tax is 15.3% on 92.35% of what you earn, with Social Security capped. '
@@ -3066,6 +3148,8 @@
     if (search) search.value = state.agentName || '';
     document.getElementById('cityRate').value = String(state.cityRate);
     document.getElementById('citySearch').value = state.cityName || '';
+    document.getElementById('ownerWage').value = state.ownerWage.toLocaleString('en-US');
+    document.getElementById('entityCost').value = state.entityCost.toLocaleString('en-US');
     syncCityClear();
     renderCityNote();
     sizeRateInputs();
@@ -3240,6 +3324,17 @@
   function applyTaxMode() {
     document.getElementById('ohioTaxPanel').hidden = state.taxMode !== 'ohio';
     document.getElementById('flatTaxPanel').hidden = state.taxMode !== 'flat';
+    const isScorp = state.entity === 'scorp';
+    document.getElementById('scorpFields').hidden = !isScorp;
+    const scorpNote = document.getElementById('scorpNote');
+    scorpNote.hidden = !isScorp;
+    scorpNote.innerHTML = 'The wage is the part payroll tax reaches, so a lower one saves more. '
+      + 'The IRS requires it to be <strong>reasonable compensation</strong> for the work you do, '
+      + 'there is no formula, and setting it too low is what gets an election challenged.';
+    document.querySelectorAll('.te-btn').forEach(b => {
+      b.classList.toggle('is-on', b.dataset.entity === state.entity);
+      b.setAttribute('aria-pressed', String(b.dataset.entity === state.entity));
+    });
     document.querySelectorAll('.tm-btn').forEach(b => {
       b.classList.toggle('is-on', b.dataset.tax === state.taxMode);
       b.setAttribute('aria-pressed', String(b.dataset.tax === state.taxMode));
@@ -3265,6 +3360,22 @@
       recompute();
     });
   });
+  document.querySelectorAll('.te-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.entity = btn.dataset.entity;
+      state.touched = true;
+      applyTaxMode();
+      recompute();
+    });
+  });
+  [['ownerWage', 'ownerWage'], ['entityCost', 'entityCost']].forEach(([id, key]) => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      formatWithCommas(e.target);
+      state[key] = Number(e.target.value.replace(/,/g, '')) || 0;
+      recompute();
+    });
+  });
+
   document.getElementById('cityRate').addEventListener('input', (e) => {
     state.cityRate = Number(e.target.value) || 0;
     // A hand-typed rate is no longer whatever city was picked

@@ -267,6 +267,89 @@
     }
   });
 
+  // ---------- S corporation election ----------
+  test('S corporation', 'An LLC on its own changes nothing: it is the sole proprietor case', () => {
+    // A single-member LLC is a disregarded entity, so there is no separate
+    // option to model. This pins that: 'sole' covers both.
+    const a = OT.estimate(120000, { filingStatus: 'single', cityRate: 2 });
+    const b = OT.estimate(120000, { filingStatus: 'single', cityRate: 2, entity: 'sole' });
+    eq(a.total, b.total, 'total');
+    eq(a.seTax, b.seTax, 'self-employment tax');
+  });
+
+  test('S corporation', 'FICA reaches the wage only, not the distribution', () => {
+    const wage = 60000;
+    const r = OT.estimate(150000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage });
+    const half = wage * (OT.FICA.socialSecurity + OT.FICA.medicare);   // 7.65% each side
+    eq(r.employerFica, half, 'employer half');
+    eq(r.employeeFica, half, 'employee half');
+    eq(r.payrollTax, half * 2, 'payroll tax');
+    // A sole proprietor on the same profit pays on 92.35% of all of it
+    const sole = OT.estimate(150000, { filingStatus: 'single', cityRate: 2 });
+    ok(sole.seTax > r.payrollTax, 'the election should cut the payroll tax, not raise it');
+  });
+
+  test('S corporation', 'Paying the whole profit as wages is worse than not electing at all', () => {
+    const profit = 120000;
+    const all = OT.estimate(profit, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: profit });
+    eq(all.distribution, 0, 'distribution');
+    const sole = OT.estimate(profit, { filingStatus: 'single', cityRate: 2 });
+    // Self-employment tax runs on 92.35% of profit; payroll tax runs on the
+    // whole wage. With no distribution the election buys nothing and costs the
+    // difference, which is exactly that 92.35%.
+    eq(all.payrollTax, sole.seTax / OT.SE.netEarningsRate, 'payroll tax on the full wage');
+    ok(all.payrollTax > sole.seTax, 'so it should be higher, not lower');
+  });
+
+  test('S corporation', 'A wage above the profit is capped at the profit', () => {
+    const r = OT.estimate(50000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: 500000 });
+    eq(r.wage, 50000, 'wage');
+    eq(r.distribution, 0, 'distribution');
+  });
+
+  test('S corporation', 'Social Security still stops at the wage base', () => {
+    const base = OT.SE.socialSecurityWageBase;
+    const r = OT.estimate(600000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: 400000 });
+    eq(r.employerFica, base * OT.FICA.socialSecurity + 400000 * OT.FICA.medicare, 'employer half');
+  });
+
+  test('S corporation', 'Ohio still covers the wage, since it is business income for the owner', () => {
+    const under = OT.estimate(200000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: 80000 });
+    eq(under.ohioTax, 0, 'Ohio tax below the deduction');
+    const over = OT.estimate(400000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: 150000 });
+    eq(over.ohioTax, Math.max(0, over.agi - 250000) * 0.03, 'Ohio tax above it');
+  });
+
+  test('S corporation', 'The city taxes the wage plus the corporation profit, not the whole profit', () => {
+    const profit = 150000, wage = 60000;
+    const r = OT.estimate(profit, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage });
+    eq(r.cityTax, (r.wage + r.distribution) * 0.02, 'city tax');
+    // Lower than the sole proprietor base by the employer half, which the
+    // corporation deducts before the distribution.
+    const sole = OT.estimate(profit, { filingStatus: 'single', cityRate: 2 });
+    ok(r.cityTax < sole.cityTax, 'the city base should be a little smaller');
+  });
+
+  test('S corporation', 'Running costs are part of the bill, so a small profit is not worth it', () => {
+    const free = OT.estimate(90000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: 60000 });
+    const costly = OT.estimate(90000, { filingStatus: 'single', cityRate: 2, entity: 'scorp', wage: 60000, entityCost: 2500 });
+    ok(costly.total > free.total, 'the cost should raise the bill');
+    ok(costly.takeHome < free.takeHome, 'and lower what is kept');
+  });
+
+  test('S corporation', 'Every figure adds up, and grossing up still inverts', () => {
+    const opts = { filingStatus: 'mfj', cityRate: 2.25, entity: 'scorp', wage: 70000, entityCost: 1500 };
+    [100000, 200000, 400000].forEach(profit => {
+      const r = OT.estimate(profit, opts);
+      eq(r.total, r.payrollTax + r.federalTax + r.ohioTax + r.cityTax + r.entityCost, `total at ${profit}`);
+      eq(r.takeHome, profit - r.total, `take-home at ${profit}`);
+    });
+    [60000, 150000].forEach(target => {
+      const gross = OT.grossUp(target, opts);
+      ok(Math.abs(OT.estimate(gross, opts).takeHome - target) < 1, `grossing up ${target}`);
+    });
+  });
+
   function run() {
     return cases.map(c => {
       try { c.fn(); return { group: c.group, name: c.name, passed: true }; }
