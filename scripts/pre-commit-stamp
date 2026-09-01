@@ -1,0 +1,22 @@
+#!/bin/sh
+# Stamps the ?v= cache-bust token in the three HTML pages whenever a staged
+# commit touches a JavaScript file, so a deploy can never serve new HTML
+# against stale cached JS (the $NaN incident of 08/31/26).
+#
+# Install once per clone:  cp scripts/pre-commit-stamp .git/hooks/pre-commit
+#
+# One caution, learned the hard way in this repo: `git add` on an HTML file
+# stages ALL of its working-tree changes. If a page has unstaged edits beyond
+# the token, this hook says so out loud instead of sweeping them in silently.
+git diff --cached --name-only | grep -q '\.js$' || exit 0
+
+V=$(date +%Y%m%d%H%M%S)
+for f in index.html planning.html tests.html; do
+  [ -f "$f" ] || continue
+  if ! git diff --quiet -- "$f"; then
+    echo "pre-commit-stamp: $f has unstaged edits; staging them along with the ?v= token" >&2
+  fi
+  sed -i '' -E "s/(src=\"[a-z-]+\.js)\?v=[^\"]*\"/\1?v=$V\"/g" "$f"
+  git add "$f"
+done
+echo "pre-commit-stamp: cache token bumped to $V" >&2
