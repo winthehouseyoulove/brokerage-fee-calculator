@@ -1920,7 +1920,6 @@
           <div class="tier-tooltip wide" id="needTooltip"></div>
           <div class="tier-num" id="minimumIncome">$0</div>
           <div class="tier-label">What Real Estate Has to Cover<span class="tier-info" id="needInfo" tabindex="0">?</span></div>
-          <div class="tier-sub"><span id="tier1Personal">$0</span> personal<span id="tier1Offset" hidden></span> + <span id="tier1Business">$0</span> business</div>
         </div>
 
         <!-- Flow: total need → tax card -->
@@ -2656,13 +2655,6 @@
 
     // Funnel tiers — update with a brief pulse if the value actually changed
     setAndPulse('minimumIncome', fmt(minimumIncome));
-    document.getElementById('tier1Personal').textContent = fmt(personalToEarn);
-    document.getElementById('tier1Business').textContent = fmt(businessAnnual);
-    const offset = document.getElementById('tier1Offset');
-    if (offset) {
-      offset.hidden = otherAnnual <= 0;
-      offset.textContent = ' after ' + fmt(otherAnnual) + ' of other income';
-    }
     setAndPulse('grossedUp', fmt(grossedUp));
     setAndPulse('requiredVolume', fmt(requiredVolume));
     const volTooltip = document.getElementById('volumeTooltip');
