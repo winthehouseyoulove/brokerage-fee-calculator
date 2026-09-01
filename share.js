@@ -110,10 +110,12 @@
   }
 
   // Each page owns one half: 'p' the plan builder, 'i' the comparison page.
+  // Merged field by field, so a page that writes only what it derives cannot
+  // wipe a choice the other page's own controls made.
   function contribute(key, half) {
     const merged = session();
     merged.v = 1;
-    merged[key] = half;
+    merged[key] = Object.assign({}, merged[key] || {}, half);
     remember(merged);
   }
 

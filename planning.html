@@ -66,6 +66,34 @@
     color: var(--muted);
     margin-bottom: 5px;
   }
+  .tax-field-city { flex: 1 1 150px; min-width: 140px; }
+  .city-search { margin: 0; padding: 0; }
+  .city-search input { height: 34px; font-size: 13px; }
+  .city-search .agent-results { top: calc(100% + 2px); max-height: 220px; }
+  .city-search .agent-result { padding: 7px 12px; font-size: 13px; }
+
+  /* The four things the rate is made of, shown rather than hidden */
+  .tax-breakdown {
+    margin: 14px 0 4px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tb-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tb-row span:first-child { color: var(--muted); }
+  .tb-row.tb-total {
+    border-bottom: none;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .tb-row.tb-total span:first-child { color: var(--text); }
+  .tb-none { color: var(--win); font-weight: 600; }
   .apc-input-small input { font-size: 18px; }
   .apc-input-small .apc-suffix { font-size: 15px; }
   .trc-note a { color: var(--remax-blue); }
@@ -936,11 +964,9 @@
   /* Two-column tax rate card (personal | business) */
   .tax-rate-card {
     width: 100%;
-    max-width: 460px;
+    max-width: 520px;
     background: var(--card);
     border: 2px solid var(--border);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
   }
   .trc-col {
     padding: 12px 16px 0;
@@ -1992,15 +2018,32 @@
                     <button type="button" class="ts-btn" data-status="mfj">Married, joint</button>
                   </div>
                 </div>
+                <div class="tax-field tax-field-city">
+                  <label for="citySearch">Your city</label>
+                  <div class="agent-search city-search">
+                    <div class="agent-input">
+                      <input type="search" id="citySearch" name="ohio-city-lookup"
+                             placeholder="Search your city"
+                             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                             role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="cityResults" />
+                      <button type="button" class="agent-clear" id="cityClear" aria-label="Clear the city" hidden>&times;</button>
+                    </div>
+                    <div class="agent-results" id="cityResults"></div>
+                  </div>
+                </div>
                 <div class="tax-field">
-                  <label for="cityRate">City income tax</label>
+                  <label for="cityRate">City rate</label>
                   <div class="apc-input apc-input-small">
-                    <input type="text" inputmode="decimal" id="cityRate" value="2.25" />
+                    <input type="text" inputmode="decimal" id="cityRate" value="1.45" />
                     <span class="apc-suffix">%</span>
                   </div>
                 </div>
               </div>
-              <p class="trc-note">Ohio charges nothing on the first $250,000 of business income, so most of this is federal and self-employment tax. Your city is the part that varies: look yours up in the <a href="https://www.ritaohio.com/TaxRatesTable" target="_blank" rel="noopener">RITA rate table</a>.</p>
+              <p class="trc-note" id="cityNote"></p>
+
+              <div class="tax-breakdown" id="taxBreakdown"></div>
+
+              <p class="trc-note">Your business expenses never reach this table. They come off before tax, so a dollar of expense costs you a dollar of revenue and nothing more. That is why there is no rate to set for them.</p>
             </div>
 
             <div id="flatTaxPanel" hidden>
@@ -2014,15 +2057,7 @@
               <p class="trc-note">Use your all-in rate, not just your income bracket. Self-employment tax lands on top of it.</p>
             </div>
           </div>
-          <div class="trc-col">
-            <div class="apc-label">Business Tax Rate</div>
-            <div class="trc-sublabel">Write-offs</div>
-            <div class="apc-input">
-              <span class="trc-locked">0</span>
-              <span class="apc-suffix">%</span>
-            </div>
-            <p class="trc-note">Business expenses come off before tax. A dollar of expense only costs you a dollar of revenue, so there is nothing to gross up.</p>
-          </div>
+
         </div>
 
         <!-- Flow: Tax card → Before Tax Income -->
@@ -2202,6 +2237,7 @@
 
 <script src="fee-math.js"></script>
 <script src="ohio-tax.js"></script>
+<script src="ohio-cities.js"></script>
 <script src="share.js"></script>
 <script src="agents-embed.js"></script>
 <script>
@@ -2249,8 +2285,10 @@
     // all-in rate, kept for agents outside Ohio and as a sanity check.
     taxMode: 'ohio',
     filingStatus: 'single',
-    // Municipal rates vary by city; Dayton area runs roughly 2% to 2.5%.
-    cityRate: 2.25,
+    // Starts at the average of the municipalities in ohio-cities.js. Picking a
+    // city replaces it with that city's own rate.
+    cityRate: Math.round(OhioCities.average * 100) / 100,
+    cityName: '',
     commissionRate: 3,
     avgPrice: medianAvgPrice(),
     // The agent whose own average sale price is driving the number above.
@@ -2696,7 +2734,8 @@
       mode: state.mode, goalTakeHome: state.goalTakeHome, simpleBusiness: state.simpleBusiness,
       simpleOtherIncome: state.simpleOtherIncome, simpleEdited: state.simpleEdited,
       personalTaxRate: state.personalTaxRate, commissionRate: state.commissionRate,
-      taxMode: state.taxMode, filingStatus: state.filingStatus, cityRate: state.cityRate,
+      taxMode: state.taxMode, filingStatus: state.filingStatus,
+      cityRate: state.cityRate, cityName: state.cityName,
       avgPrice: state.avgPrice, agentName: state.agentName,
       selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
       touched: true,
@@ -2708,13 +2747,14 @@
     return {
       v: 1,
       p: p,
+      // Only the production numbers this page derives. The comparison page's
+      // own custom plan is its business: stamping this page's copy over it
+      // would reopen a card the user had just closed there.
       i: {
         volume: Math.round(best.volume || 0),
         transactions: best.transactions || 0,
         commissionRate: state.commissionRate,
         mls: mlsLine ? Number(mlsLine.amount) || 0 : 0,
-        showCustom: state.showCustomPlan,
-        customPlan: state.customPlan,
       },
     };
   }
@@ -2771,11 +2811,23 @@
     if (effEl) effEl.textContent = shownRate.toFixed(1);
     if (state.taxMode === 'ohio') {
       const t = OhioTax.estimate(personalGrossed, taxOpts());
+      const row = (label, value, note) =>
+        '<div class="tb-row"><span>' + label + '</span><span>'
+        + (note ? '<span class="tb-none">' + note + '</span>' : fmt(value)) + '</span></div>';
+      document.getElementById('taxBreakdown').innerHTML =
+        '<div class="tb-row tb-total"><span>On ' + fmt(t.profit) + ' of profit</span><span>'
+          + fmt(t.total) + '</span></div>'
+        + row('Self-employment tax', t.seTax)
+        + row('Federal income tax', t.federalTax)
+        + row('Ohio income tax', t.ohioTax, t.ohioTax === 0 ? 'Nothing, deducted' : '')
+        + row('City income tax' + (state.cityName ? ', ' + state.cityName : '') + ' at ' + state.cityRate + '%', t.cityTax);
+
       setTooltip('taxTooltip',
-        'On ' + fmt(t.profit) + ' of profit: ' + fmt(t.seTax) + ' self-employment, '
-          + fmt(t.federalTax) + ' federal, ' + fmt(t.ohioTax) + ' Ohio, '
-          + fmt(t.cityTax) + ' city at ' + state.cityRate + '%'
-          + (t.ohioTax === 0 ? '. Ohio is nothing because the Business Income Deduction covers the first $250,000.' : '.'),
+        'Self-employment tax is 15.3% on 92.35% of what you earn, with Social Security capped. '
+          + 'Federal is the 2026 brackets after the standard deduction. '
+          + (t.ohioTax === 0
+              ? 'Ohio is nothing: the Business Income Deduction covers the first $250,000 of business income.'
+              : 'Ohio is a flat 3% on the business income above the $250,000 deduction.'),
         '= ' + fmt(t.total) + ', or ' + shownRate.toFixed(1) + '% of what you earn');
     }
     setAndPulse('requiredVolume', fmt(requiredVolume));
@@ -2901,6 +2953,9 @@
     const search = document.getElementById('agentSearch');
     if (search) search.value = state.agentName || '';
     document.getElementById('cityRate').value = String(state.cityRate);
+    document.getElementById('citySearch').value = state.cityName || '';
+    syncCityClear();
+    renderCityNote();
     sizeRateInputs();
     applyTaxMode();
     applyMode();
@@ -3100,8 +3155,113 @@
   });
   document.getElementById('cityRate').addEventListener('input', (e) => {
     state.cityRate = Number(e.target.value) || 0;
+    // A hand-typed rate is no longer whatever city was picked
+    state.cityName = '';
+    document.getElementById('citySearch').value = '';
+    syncCityClear();
+    renderCityNote();
     sizeToContent(e.target);
     recompute();
+  });
+
+  // ---------- Which city they live in ----------
+  const cityEl = document.getElementById('citySearch');
+  const cityResultsEl = document.getElementById('cityResults');
+  const cityClearEl = document.getElementById('cityClear');
+  let cityIndex = -1;
+
+  // Called from syncInputs() during startup, before the consts above have run,
+  // so these two look their elements up rather than closing over them.
+  function syncCityClear() {
+    const box = document.getElementById('citySearch');
+    const clear = document.getElementById('cityClear');
+    if (box && clear) clear.hidden = box.value.trim() === '';
+  }
+
+  function renderCityNote() {
+    const note = document.getElementById('cityNote');
+    if (!note) return;
+    const avg = OhioCities.average.toFixed(2);
+    note.innerHTML = state.cityName
+      ? state.cityName + ' charges ' + state.cityRate + '%, and it lands on every dollar of profit: '
+        + 'municipalities have no equivalent of Ohio\'s Business Income Deduction.'
+      : 'Starting at <strong>' + avg + '%</strong>, the average across the '
+        + OhioCities.CITIES.length + ' Ohio municipalities listed. Pick your city for its own rate, '
+        + 'or type one in. Not every Ohio municipality is on that list, so a missing city is not a city without a tax.';
+  }
+
+  function renderCityResults(matches) {
+    cityResultsEl.innerHTML = matches.length
+      ? matches.slice(0, 40).map((c, i) => `
+          <div class="agent-result${i === cityIndex ? ' active' : ''}" data-index="${i}">
+            <span class="ar-name">${c.name}</span>
+            <span class="ar-stats">${c.rate}%</span>
+          </div>`).join('')
+      : '<div class="agent-result"><span class="ar-empty">Not on the list. Type the rate instead.</span></div>';
+    cityResultsEl.classList.add('open');
+    cityEl.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeCityResults() {
+    cityResultsEl.classList.remove('open');
+    cityEl.setAttribute('aria-expanded', 'false');
+  }
+
+  function selectCity(city) {
+    state.cityName = city.name;
+    state.cityRate = city.rate;
+    state.touched = true;
+    cityEl.value = city.name;
+    document.getElementById('cityRate').value = String(city.rate);
+    sizeToContent(document.getElementById('cityRate'));
+    closeCityResults();
+    syncCityClear();
+    renderCityNote();
+    recompute();
+  }
+
+  cityEl.addEventListener('input', () => {
+    cityIndex = -1;
+    syncCityClear();
+    renderCityResults(OhioCities.search(cityEl.value));
+  });
+  cityEl.addEventListener('focus', () => {
+    cityIndex = -1;
+    renderCityResults(OhioCities.search(cityEl.value));
+  });
+  cityEl.addEventListener('keydown', (e) => {
+    const matches = OhioCities.search(cityEl.value);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault(); cityIndex = Math.min(cityIndex + 1, matches.length - 1); renderCityResults(matches);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); cityIndex = Math.max(cityIndex - 1, 0); renderCityResults(matches);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const pick = matches[cityIndex >= 0 ? cityIndex : 0];
+      if (pick) selectCity(pick);
+    } else if (e.key === 'Escape') {
+      closeCityResults();
+    }
+  });
+  cityResultsEl.addEventListener('click', (e) => {
+    const item = e.target.closest('.agent-result');
+    if (!item || item.dataset.index === undefined) return;
+    const pick = OhioCities.search(cityEl.value)[Number(item.dataset.index)];
+    if (pick) selectCity(pick);
+  });
+  cityClearEl.addEventListener('click', () => {
+    state.cityName = '';
+    state.cityRate = Math.round(OhioCities.average * 100) / 100;
+    cityEl.value = '';
+    document.getElementById('cityRate').value = String(state.cityRate);
+    sizeToContent(document.getElementById('cityRate'));
+    closeCityResults();
+    syncCityClear();
+    renderCityNote();
+    recompute();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.city-search')) closeCityResults();
   });
   // Business side is fixed at 0% on purpose: expenses are deducted before tax,
   // so a dollar of expense needs exactly a dollar of revenue. No slider to get wrong.
@@ -3462,6 +3622,7 @@
     state.taxMode = DEFAULTS.taxMode;
     state.filingStatus = DEFAULTS.filingStatus;
     state.cityRate = DEFAULTS.cityRate;
+    state.cityName = DEFAULTS.cityName;
     state.commissionRate = DEFAULTS.commissionRate;
     state.avgPrice = DEFAULTS.avgPrice;
     state.simpleEdited = true;
