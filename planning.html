@@ -122,6 +122,54 @@
   }
   .city-rate input:focus { outline: none; }
 
+  /* ---------- The three picked concepts ---------- */
+  .ladder-block, .anchor-block, .checks-block {
+    width: 100%;
+    background: var(--card);
+    border: 2px solid var(--border);
+    padding: 16px 18px 14px;
+    margin-top: 18px;
+  }
+  .ladder { display: flex; flex-direction: column; align-items: center; }
+  .rung {
+    width: 100%; max-width: 420px; background: var(--bg); border: 1px solid var(--border);
+    padding: 11px 16px; display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .rung b { font-size: 20px; font-variant-numeric: tabular-nums; }
+  .rung span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+  .ratio { display: flex; flex-direction: column; align-items: center; padding: 3px 0; }
+  .ratio .rline { width: 0; height: 9px; border-left: 2px dotted #b9b29a; }
+  .ratio .op { font-size: 11.5px; color: var(--muted); padding: 2px 10px; font-variant-numeric: tabular-nums; }
+  .rate-edit {
+    border: none; border-bottom: 1px dotted var(--muted); background: transparent;
+    font: inherit; font-weight: 700; color: var(--text); padding: 0;
+    width: 2.2ch; text-align: right;
+  }
+  .rate-edit:focus { outline: none; border-bottom-color: var(--text); }
+  .ladder-hero {
+    width: 100%; max-width: 420px; background: var(--remax-blue); color: var(--bg);
+    text-align: center; padding: 18px 16px; margin-top: 2px;
+  }
+  .ladder-hero .big { font-size: 32px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .ladder-hero .cap { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; opacity: 0.85; margin-top: 4px; }
+  .ladder-note { margin: 14px auto 0; max-width: 54ch; font-size: 12px; color: var(--muted); text-align: center; }
+
+  .anchor-svg { width: 100%; height: auto; display: block; }
+  .anchor-line { font-size: 13px; margin: 10px 0 0; max-width: 58ch; }
+  .anchor-line b { color: var(--remax-red); }
+
+  .checks-row { display: flex; align-items: flex-end; gap: 3px; height: 72px; }
+  .check-stub { flex: 1; min-width: 3px; background: #cfc8b2; }
+  .check-stub.fat { background: var(--remax-blue); }
+  .check-divider { flex: none; width: 0; height: 100%; border-left: 2px dashed var(--remax-red); }
+  .checks-legend {
+    display: flex; justify-content: space-between; gap: 10px;
+    font-size: 11px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums;
+  }
+  .checks-legend b { color: var(--text); }
+  .checks-legend .cd { color: var(--remax-red); font-weight: 700; }
+  .checks-note { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+
   /* The bill, four parts adding to one answer at the bottom */
   .tax-breakdown {
     margin: 16px 0 12px;
@@ -2319,6 +2367,33 @@
         </div>
         <p class="funnel-note" id="surplusNote"></p>
 
+        <!-- Picked concept: deals become a weekly activity number -->
+        <div class="ladder-block" id="ladderBlock" hidden>
+          <div class="dist-head">From deals to your week</div>
+          <div class="ladder">
+            <div class="rung"><b id="ldDeals">0</b><span>closings</span></div>
+            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateClose" inputmode="numeric" value="75" aria-label="Percent of signed clients that close" />% of signed clients make it to closing</div><div class="rline"></div></div>
+            <div class="rung"><b id="ldClients">0</b><span>signed clients</span></div>
+            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateSign" inputmode="numeric" value="40" aria-label="Percent of appointments that sign" />% of appointments sign with you</div><div class="rline"></div></div>
+            <div class="rung"><b id="ldAppts">0</b><span>appointments</span></div>
+            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateBook" inputmode="numeric" value="10" aria-label="Percent of conversations that book an appointment" />% of real conversations book one</div><div class="rline"></div></div>
+            <div class="rung"><b id="ldConv">0</b><span>conversations this year</span></div>
+            <div class="ratio"><div class="rline"></div><div class="op">÷ 52 weeks</div><div class="rline"></div></div>
+            <div class="ladder-hero">
+              <div class="big"><span id="ldWeekly">0</span> conversations</div>
+              <div class="cap">a week. That is the whole plan.</div>
+            </div>
+          </div>
+          <p class="ladder-note">The rates are yours to edit. The RE/MAX Alliance fee sheet includes Buffini coaching, which is built on exactly this math.</p>
+        </div>
+
+        <!-- Picked concept: the plan against the agent's own last year -->
+        <div class="anchor-block" id="anchorBlock" hidden>
+          <div class="dist-head">Against your own last year</div>
+          <svg class="anchor-svg" id="anchorSvg" viewBox="0 0 640 200" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="anchorLine"></svg>
+          <p class="anchor-line" id="anchorLine"></p>
+        </div>
+
 
         <div class="plan-summary" id="planSummary" hidden>
           <span class="ps-kicker">The plan</span>
@@ -2329,6 +2404,14 @@
             <div><b id="psTakeHome"></b><span>your year, paid for</span></div>
           </div>
           <p class="ps-note" id="psNote"></p>
+        </div>
+
+        <!-- Picked concept: the year as a row of checks, thin then fat -->
+        <div class="checks-block" id="checksBlock" hidden>
+          <div class="dist-head">The year in checks</div>
+          <div class="checks-row" id="checksRow"></div>
+          <div class="checks-legend" id="checksLegend"></div>
+          <p class="checks-note" id="checksNote"></p>
         </div>
 
         <div class="flow-block" id="flowBlock" hidden>
@@ -2371,7 +2454,8 @@
     }
     .line-item { break-inside: avoid; }
     .funnel-tier, .funnel-plan, .tax-rate-card, .commission-card,
-    .avg-price-card, .flow-block, .simple-panel, .plan-summary { break-inside: avoid; }
+    .avg-price-card, .flow-block, .simple-panel, .plan-summary,
+    .ladder-block, .anchor-block, .checks-block { break-inside: avoid; }
     .demo-banner { display: none !important; }
     .plan-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .funnel-plans { break-inside: avoid; }
@@ -2452,6 +2536,12 @@
     cityRate: Math.round(OhioCities.average * 100) / 100,
     cityName: '',
     commissionRate: 3,
+    // Conversion rates for the activity ladder: percent of signed clients that
+    // close, of appointments that sign, of conversations that book. Editable
+    // assumptions, like the tax rate, and they travel with the plan.
+    ladderClose: 75,
+    ladderSign: 40,
+    ladderBook: 10,
     avgPrice: medianAvgPrice(),
     // The agent whose own average sale price is driving the number above.
     // Empty means nobody is matched, so the area median stands in.
@@ -2660,7 +2750,7 @@
     return {
       volume: sharedVolume, gci: sharedGci, transactions: sharedTxn,
       net: chosenCard ? chosenCard.net : winnerNet,
-      winnerName, chosenName: chosen.plan.name,
+      winnerName, chosenName: chosen.plan.name, chosenPlan: chosen.plan,
     };
   }
 
@@ -2859,6 +2949,127 @@
     return OhioTax.estimate(profit, taxOpts()).effectiveRate * 100;
   }
 
+  // ---------- Picked concept: the activity ladder ----------
+  // Deals come from conversations. Walk the funnel up with the user's own
+  // conversion rates, and the year becomes a weekly number. Each level is
+  // rounded from the continuous chain, so the arithmetic never contradicts
+  // itself between rungs.
+  function renderLadder(txn) {
+    const block = document.getElementById('ladderBlock');
+    if (!block) return;
+    const close = state.ladderClose / 100, sign = state.ladderSign / 100, book = state.ladderBook / 100;
+    if (!(txn > 0) || close <= 0 || sign <= 0 || book <= 0) { block.hidden = true; return; }
+    block.hidden = false;
+    const clients = txn / close;
+    const appts = clients / sign;
+    const conv = appts / book;
+    document.getElementById('ldDeals').textContent = txn;
+    document.getElementById('ldClients').textContent = Math.round(clients);
+    document.getElementById('ldAppts').textContent = Math.round(appts);
+    document.getElementById('ldConv').textContent = Math.round(conv).toLocaleString('en-US');
+    document.getElementById('ldWeekly').textContent = Math.max(1, Math.round(conv / 52));
+  }
+
+  // ---------- Picked concept: the last-year anchor ----------
+  // When an agent is matched, the plan looks their 2025 in the eye: a slope
+  // from what they closed to what the plan asks, with the market median as a
+  // faint floor. Drawn only for a matched agent; the median line alone is not
+  // an anchor.
+  function renderAnchor(txn) {
+    const block = document.getElementById('anchorBlock');
+    if (!block) return;
+    const agent = state.agentName
+      ? agents.find(a => a.name === state.agentName && a.units > 0)
+      : null;
+    if (!agent || !(txn > 0)) { block.hidden = true; return; }
+    block.hidden = false;
+
+    const last = Math.round(agent.units);
+    const units = agents.filter(a => a.units > 0).map(a => a.units).sort((a, b) => a - b);
+    const median = Math.round(units[Math.floor(units.length / 2)]);
+
+    const W = 640, H = 200, top = 34, bottom = 168;
+    const maxV = Math.max(txn, last, median) * 1.15;
+    const y = v => bottom - (v / maxV) * (bottom - top);
+    const x1 = 150, x2 = 470;
+    const gap = txn - last;
+
+    let svg = '<line x1="70" y1="' + y(median) + '" x2="570" y2="' + y(median)
+      + '" stroke="#cfc8b2" stroke-width="1.5" stroke-dasharray="3 4"></line>'
+      + '<text x="575" y="' + (y(median) + 4) + '" font-size="10" fill="#6b7280">Dayton median: ' + median + '</text>'
+      + '<line x1="' + x1 + '" y1="' + y(last) + '" x2="' + x2 + '" y2="' + y(txn) + '" stroke="#0C2749" stroke-width="2.5"></line>'
+      + '<circle cx="' + x1 + '" cy="' + y(last) + '" r="7" fill="#0C2749"></circle>'
+      + '<circle cx="' + x2 + '" cy="' + y(txn) + '" r="8" fill="#AA1120"></circle>'
+      + '<text x="' + x1 + '" y="' + (y(last) - 14) + '" text-anchor="middle" font-size="22" font-weight="800" fill="#0C2749">' + last + '</text>'
+      + '<text x="' + x1 + '" y="' + (y(last) + 24) + '" text-anchor="middle" font-size="10" letter-spacing="1" fill="#6b7280">YOUR 2025</text>'
+      + '<text x="' + x2 + '" y="' + (y(txn) - 16) + '" text-anchor="middle" font-size="22" font-weight="800" fill="#AA1120">' + txn + '</text>'
+      + '<text x="' + x2 + '" y="' + (y(txn) + 24) + '" text-anchor="middle" font-size="10" letter-spacing="1" fill="#6b7280">THE PLAN</text>';
+    if (gap !== 0) {
+      const yHi = y(Math.max(txn, last)), yLo = y(Math.min(txn, last));
+      svg += '<path d="M' + (x2 + 42) + ',' + yHi + ' h16 v' + (yLo - yHi) + ' h-16" fill="none" stroke="#6b7280" stroke-width="1.5"></path>'
+        + '<text x="' + (x2 + 64) + '" y="' + ((yHi + yLo) / 2 + 4) + '" font-size="12" font-weight="700" fill="#0C2749">'
+        + (gap > 0 ? '+' : '\u2212') + Math.abs(gap) + '</text>';
+    }
+    document.getElementById('anchorSvg').innerHTML = svg;
+
+    const weekly = Math.max(1, Math.round((txn / (state.ladderClose / 100) / (state.ladderSign / 100) / (state.ladderBook / 100)) / 52));
+    const lastWeekly = Math.max(1, Math.round((last / (state.ladderClose / 100) / (state.ladderSign / 100) / (state.ladderBook / 100)) / 52));
+    const moreWeekly = Math.max(0, weekly - lastWeekly);
+    // "Not a different life" is only true for small gaps; a doubling is one.
+    document.getElementById('anchorLine').innerHTML = gap > 0
+      ? 'This plan asks for <b>' + gap + ' more ' + (gap === 1 ? 'closing' : 'closings')
+        + ' than your 2025</b>. At your rates above, that is ' + moreWeekly
+        + ' more ' + (moreWeekly === 1 ? 'conversation' : 'conversations') + ' a week'
+        + (moreWeekly <= 5
+            ? ', not a different life.'
+            : ' \u2014 a different scale of business. Before committing to it, look hard at the goal, the expenses, and the average sale price.')
+      : (gap === 0
+          ? 'This plan is <b>exactly your 2025</b>. The year is proven; the question is what the fees leave you.'
+          : 'This plan asks for <b>' + Math.abs(gap) + ' fewer ' + (Math.abs(gap) === 1 ? 'closing' : 'closings')
+            + ' than your 2025</b>. You have headroom: the goal could rise, or the year could breathe.');
+  }
+
+  // ---------- Picked concept: the year in checks ----------
+  // Every closing drawn as a stub whose height is that deal's net after the
+  // split and the per-transaction fee. The cap is the visible break: thin
+  // checks, then fat ones. Monthly fees and dues are not per-deal, so they
+  // stay out of the stubs and the caption says so.
+  function renderChecks(plan, gciPerDeal, txn) {
+    const block = document.getElementById('checksBlock');
+    if (!block) return;
+    if (!plan || !(txn > 0) || !(gciPerDeal > 0) || txn > 120) { block.hidden = true; return; }
+    block.hidden = false;
+
+    const splitCost = g => FeeMath.compute(plan, g, 0, 0).splitCost;
+    const nets = [];
+    let capDeal = 0;
+    for (let k = 1; k <= txn; k++) {
+      nets.push(gciPerDeal - (splitCost(k * gciPerDeal) - splitCost((k - 1) * gciPerDeal)) - plan.perTransaction);
+      if (!capDeal && FeeMath.compute(plan, k * gciPerDeal, 0, 0).capMet) capDeal = k;
+    }
+    const maxNet = Math.max.apply(null, nets);
+    const capped = capDeal > 0 && capDeal <= txn;
+
+    let html = '';
+    nets.forEach((n, i) => {
+      const k = i + 1;
+      if (capped && k === capDeal + 1) html += '<div class="check-divider"></div>';
+      const h = Math.max(16, Math.round((n / maxNet) * 68));
+      html += '<div class="check-stub' + (capped && k > capDeal ? ' fat' : '') + '" style="height:' + h + 'px" title="Deal '
+        + k + ': ' + fmt(n) + '"></div>';
+    });
+    document.getElementById('checksRow').innerHTML = html;
+
+    const pre = nets[0], post = nets[nets.length - 1];
+    document.getElementById('checksLegend').innerHTML = capped
+      ? '<span><b>' + fmt(pre) + '</b> each</span><span class="cd">cap fills at deal ' + capDeal + '</span><span><b>' + fmt(post) + '</b> each</span>'
+      : '<span><b>' + fmt(pre) + '</b> each</span><span>' + (plan.cap > 0 ? 'the cap does not fill this year' : 'no cap on this plan') + '</span>';
+    document.getElementById('checksNote').textContent =
+      'Each check is your side of one ' + fmt(gciPerDeal / (state.commissionRate / 100)).replace('$', '$')
+      + ' closing after the ' + plan.name + ' split and the ' + fmt(plan.perTransaction)
+      + ' transaction fee. Monthly fees and dues come out separately.';
+  }
+
   // ---------- What the year has to cover ----------
   // Single source of truth for both modes, so the funnel below never has to
   // care which one is on.
@@ -2905,6 +3116,7 @@
       taxMode: state.taxMode, filingStatus: state.filingStatus,
       cityRate: state.cityRate, cityName: state.cityName,
       entity: state.entity, ownerWage: state.ownerWage, entityCost: state.entityCost,
+      ladderClose: state.ladderClose, ladderSign: state.ladderSign, ladderBook: state.ladderBook,
       avgPrice: state.avgPrice, agentName: state.agentName,
       selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
       touched: true,
@@ -3126,6 +3338,10 @@
     const lifeShare = Math.min(personalToEarn, pocket);
     renderFlow(best.gci || 0, brokerageCost, businessAnnual, taxCost,
                lifeShare, Math.max(0, pocket - lifeShare));
+    renderLadder(isEmpty ? 0 : totalTransactions);
+    renderAnchor(isEmpty ? 0 : totalTransactions);
+    renderChecks(best.chosenPlan, avgPrice * (state.commissionRate / 100),
+                 isEmpty ? 0 : totalTransactions);
 
     const payload = sharePayload();
     Share.contribute('p', payload.p);
@@ -3157,6 +3373,10 @@
     if (search) search.value = state.agentName || '';
     document.getElementById('cityRate').value = String(state.cityRate);
     document.getElementById('citySearch').value = state.cityName || '';
+    document.getElementById('rateClose').value = String(state.ladderClose);
+    document.getElementById('rateSign').value = String(state.ladderSign);
+    document.getElementById('rateBook').value = String(state.ladderBook);
+    ['rateClose', 'rateSign', 'rateBook'].forEach(id => sizeToContent(document.getElementById(id)));
     document.getElementById('ownerWage').value = state.ownerWage.toLocaleString('en-US');
     document.getElementById('entityCost').value = state.entityCost.toLocaleString('en-US');
     syncCityClear();
@@ -3413,6 +3633,16 @@
     });
   });
 
+  [['rateClose', 'ladderClose'], ['rateSign', 'ladderSign'], ['rateBook', 'ladderBook']].forEach(([id, key]) => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      state[key] = (v >= 1 && v <= 100) ? v : state[key];
+      state.touched = true;
+      sizeToContent(e.target);
+      recompute();
+    });
+  });
+
   document.getElementById('cityRate').addEventListener('input', (e) => {
     state.cityRate = Number(e.target.value) || 0;
     // A hand-typed rate is no longer whatever city was picked
@@ -3572,7 +3802,7 @@
     ['.commission-card'],
     ['.funnel-tier.t3'],
     ['.avg-price-card'],
-    ['.funnel-tier.t4', '#surplusNote', '#planSummary', '#flowBlock'],
+    ['.funnel-tier.t4', '#surplusNote', '#ladderBlock', '#anchorBlock', '#planSummary', '#checksBlock', '#flowBlock'],
   ];
   const REVEAL_LABELS = [
     'What tax does to that number',
@@ -3927,6 +4157,9 @@
     state.cityRate = DEFAULTS.cityRate;
     state.cityName = DEFAULTS.cityName;
     state.commissionRate = DEFAULTS.commissionRate;
+    state.ladderClose = DEFAULTS.ladderClose;
+    state.ladderSign = DEFAULTS.ladderSign;
+    state.ladderBook = DEFAULTS.ladderBook;
     state.avgPrice = DEFAULTS.avgPrice;
     state.simpleEdited = true;
     state.touched = true;
