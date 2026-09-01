@@ -508,7 +508,27 @@
   }
 
   /* Mode toggle: take-home goal vs full breakdown */
-  .expense-step .mode-toggle { margin-bottom: 14px; }
+  .card-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .btn-reset {
+    font-family: inherit;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .btn-reset:hover { color: var(--win); }
+  .expense-step .mode-toggle { margin-bottom: 0; }
   .mode-toggle {
     display: inline-flex;
     border: 2px solid var(--border);
@@ -1982,9 +2002,12 @@
 
     <!-- Step 1: Expenses -->
     <div class="step expense-step">
-      <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
-        <button type="button" class="mt-btn is-on" data-mode="simple">I know my take-home goal</button>
-        <button type="button" class="mt-btn" data-mode="detailed">Break down my expenses</button>
+      <div class="card-top">
+        <div class="mode-toggle" role="group" aria-label="How to enter your numbers">
+          <button type="button" class="mt-btn is-on" data-mode="simple">I know my take-home goal</button>
+          <button type="button" class="mt-btn" data-mode="detailed">Break down my expenses</button>
+        </div>
+        <button type="button" class="btn-reset" id="btnReset">Start over</button>
       </div>
       <h2 id="expenseHeading">Personal &amp; Business Expenses</h2>
       <p class="demo-banner" id="demoBanner">These are <strong>example numbers</strong> so you can see how the math works. Replace them with your own.</p>
@@ -3697,6 +3720,26 @@
     syncInputs();
     recompute();
   });
+  // Load demo numbers and Clear all work on the lists; this puts the whole page
+  // back, mode and tax settings included. The saved copy and the carried link
+  // are dropped, and the save written immediately after is flagged untouched,
+  // which is the rule loadState() already uses to let fresh defaults win on the
+  // next visit.
+  document.getElementById('btnReset').addEventListener('click', () => {
+    Object.keys(DEFAULTS).forEach(k => {
+      state[k] = JSON.parse(JSON.stringify(DEFAULTS[k]));
+    });
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    try { sessionStorage.removeItem('remax-share-state'); } catch (e) {}
+    // A link in the address bar would otherwise reapply itself on reload
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    revealed = 1;
+    applyReveal();
+    syncInputs();
+    recompute();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
   document.getElementById('btnClear').addEventListener('click', () => {
     // Zero the money, keep the line labels so the sheet stays usable, and put
     // the rate assumptions back to their defaults.
