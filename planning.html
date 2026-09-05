@@ -6,6 +6,8 @@
 <title>REMAX Alliance — Business Plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="page-flash.js?v=20260904213231"></script>
 <style>
@@ -1823,42 +1825,6 @@
     margin-top: 2px;
   }
 
-  /* Summary rail */
-  .summary-rail {
-    position: sticky;
-    top: 24px;
-    align-self: start;
-    background: var(--remax-blue);
-    color: white;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .summary-rail h3 {
-    margin: 0 0 16px;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.7;
-    font-weight: 600;
-  }
-  .sr-row { margin-bottom: 14px; }
-  .sr-row:last-child { margin-bottom: 0; }
-  .sr-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.7;
-  }
-  .sr-val {
-    font-size: 20px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    margin-top: 2px;
-  }
-  .sr-val.accent { color: #ff8a96; }
-  .sr-divider { height: 1px; background: rgba(255,255,255,0.15); margin: 14px 0; }
-
   /* Plan cards (Step 7) — copied from index.html */
   .plans {
     display: grid;
@@ -2022,29 +1988,6 @@
     border-radius: 6px;
   }
   .cap-met { color: var(--win); font-weight: 600; }
-
-  .target-indicator {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 8px 10px;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .target-indicator.met {
-    background: #ecfdf3;
-    color: #07734c;
-  }
-  .target-indicator.short {
-    background: #fef3f2;
-    color: #b42318;
-  }
-  .target-indicator .ti-icon {
-    font-size: 14px;
-    font-weight: 700;
-  }
 
   .payoff-banner {
     background: var(--remax-red);
@@ -2508,7 +2451,8 @@
 <footer>
     <div class="office-disclosure">
       <span class="od-name">REMAX Alliance</span>
-      <span class="od-line">8900 N Dixie Dr, Dayton, OH 45414 &middot; <a href="tel:+19378984400">(937) 898-4400</a> &middot; <a href="https://alliance-vandalia-dayton-oh.remax.com/" target="_blank" rel="noopener">alliance-vandalia-dayton-oh.remax.com</a></span>
+      <span class="od-line">8900 N Dixie Dr, Dayton, OH 45414 &middot; <a href="tel:+19378984400">(937) 898-4400</a></span>
+      <span class="od-line"><a href="mailto:mike.seagraves@remax.net">mike.seagraves@remax.net</a> &middot; <a href="https://alliance-vandalia-dayton-oh.remax.com/" target="_blank" rel="noopener">alliance-vandalia-dayton-oh.remax.com</a></span>
       <span class="od-line">Each Office Independently Owned and Operated.</span>
     </div>
   Plan terms current as of the REMAX Alliance fee sheet dated 08/27/2026. Monthly fees
@@ -2880,9 +2824,13 @@
     // The brokerage band needs to read as distinct from the trunk it leaves.
     // --remax-blue and --remax-blue-dark are near-identical navies, so the cut
     // was invisible against the main flow.
-    const BLUE = '#5b7ba6', DARK = 'var(--remax-blue-dark)';
-    const GREY = '#8a8578', STONE = '#b9b2a1';
-    const RED = 'var(--remax-red)', AMBER = '#d8734a';
+    // Every band is a REMAX colour. Reds are the money the agent keeps, blues
+    // and charcoal are the money that leaves, and the trunk stays Dark Blue.
+    const BLUE = '#0043ff', DARK = 'var(--remax-blue-dark)';   // Primary Blue, Dark Blue
+    // Tax takes the pale one: the business-costs label is drawn on top of the
+    // tax band, and dark type on charcoal was unreadable.
+    const GREY = '#232323', STONE = '#A3D4F2';                 // Dark Charcoal Gray, Sky Blue
+    const RED = 'var(--remax-red)', AMBER = '#ff1200';         // Bridge Red, Primary Red
 
     // Column 3 takes what is taxed and splits it: the agent's money on top,
     // tax dropping out the bottom, matching how the earlier cuts are drawn.
