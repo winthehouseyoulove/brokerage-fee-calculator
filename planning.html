@@ -403,24 +403,27 @@
     justify-content: space-between;
     gap: 12px 16px;
   }
-  .brand { height: 30px; width: auto; display: block; }
+  .brand-lockup { --logo-h: 30px; }
+  .brand { height: var(--logo-h); width: auto; display: block; }
   /* Office logo lockup. The brand manual sets the office name between 50% and
      100% of the height of the capitals in REMAX (about 19.5px at a 30px logo)
      and puts it no closer than one width of the "M" stroke and no further than
      three. 15px type and a 12px gap sit inside both windows. Black is one of
      the approved office-name colours; the site's navy is not. */
-  /* Baseline, not centre. The logo file is 1112x308 with the balloon rising to
-     row 14 and the REMAX capitals sitting on row 301, so centring the image
-     against the text throws the office name about 10px above the letters it is
-     supposed to sit beside. Aligning baselines puts the text baseline on the
-     image's bottom edge, which is 0.7px under the REMAX baseline at 30px. */
-  .brand-lockup { display: flex; align-items: baseline; gap: 12px; }
+  /* The office name is centred on the REMAX letters, not on the image and not
+     on their baseline. The logo file is 1112x308: the balloon rises to row 14
+     while the capitals run rows 91 to 301, so the letters' centre sits at row
+     196, which is 13.6% of the height below the image's own centre. Centring
+     the flex row and pushing the name down by that fraction lands its optical
+     centre on the middle of REMAX at any logo size. */
+  .brand-lockup { display: flex; align-items: center; gap: 12px; }
   .office-name {
     font-size: 16px;
     font-weight: 500;
     color: #000000;
     line-height: 1;
     white-space: nowrap;
+    transform: translateY(calc(var(--logo-h) * 0.136));
   }
   @media (max-width: 420px) { .office-name { font-size: 15px; } }
   .top-nav {
