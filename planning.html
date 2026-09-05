@@ -6,9 +6,12 @@
 <title>REMAX Alliance — Business Plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- The icon href carries a version. Browsers cache a failed favicon fetch,
-     and a few did while the file was mid-deploy; a new URL forces a refetch. -->
-<link rel="icon" type="image/png" href="favicon.png?v=1">
+<!-- Safari on macOS wants an .ico and will not take the PNG on its own, so the
+     Balloon ships as both. The ico holds 16, 32 and 48px. The href carries a
+     version because browsers cache a failed favicon fetch, and some did while
+     the file was mid-deploy; a new URL forces a refetch. -->
+<link rel="icon" href="favicon.ico?v=1" sizes="any">
+<link rel="icon" type="image/png" href="favicon.png?v=1" sizes="192x192">
 <link rel="apple-touch-icon" href="favicon.png?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="page-flash.js?v=20260904213231"></script>
