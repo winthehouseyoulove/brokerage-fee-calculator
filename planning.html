@@ -409,15 +409,20 @@
      and puts it no closer than one width of the "M" stroke and no further than
      three. 15px type and a 12px gap sit inside both windows. Black is one of
      the approved office-name colours; the site's navy is not. */
-  .brand-lockup { display: flex; align-items: center; gap: 12px; }
+  /* Baseline, not centre. The logo file is 1112x308 with the balloon rising to
+     row 14 and the REMAX capitals sitting on row 301, so centring the image
+     against the text throws the office name about 10px above the letters it is
+     supposed to sit beside. Aligning baselines puts the text baseline on the
+     image's bottom edge, which is 0.7px under the REMAX baseline at 30px. */
+  .brand-lockup { display: flex; align-items: baseline; gap: 12px; }
   .office-name {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 500;
     color: #000000;
     line-height: 1;
     white-space: nowrap;
   }
-  @media (max-width: 420px) { .office-name { font-size: 13px; } }
+  @media (max-width: 420px) { .office-name { font-size: 15px; } }
   .top-nav {
     display: flex;
     gap: 6px;
