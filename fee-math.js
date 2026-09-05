@@ -55,7 +55,7 @@
     return { gci: 0, volume: 0, transactions: 0, result: null, feasible: false };
   }
 
-  // Plan terms from the RE/MAX Alliance fee sheet dated 08/27/2026.
+  // Plan terms from the REMAX Alliance fee sheet dated 08/27/2026.
   // Monthly is the plan fee only; MLS dues are entered separately.
   const PLANS = {
     noStress: {

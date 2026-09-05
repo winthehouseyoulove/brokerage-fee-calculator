@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RE/MAX Alliance — Fee Math Checks</title>
+<title>REMAX Alliance — Fee Math Checks</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -68,6 +68,20 @@
   tr.net td { font-weight: 700; color: var(--remax-red); font-size: 16px; }
   .work { color: var(--muted); font-size: 12px; }
   footer { text-align: center; padding: 8px 24px 24px; font-size: 12px; color: var(--muted); }
+  /* Required on every REMAX-branded page: the full office name, the office's
+     own contact information, and the independence notice. */
+  .office-disclosure {
+    display: block;
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .office-disclosure .od-name {
+    display: block;
+    font-weight: 600;
+    color: #232323;
+  }
+  .office-disclosure .od-line { display: block; }
+  .office-disclosure a { color: inherit; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -78,7 +92,7 @@
     <a href="tests.html" class="active">Math Checks</a>
   </nav>
   <h1>Fee Math Checks</h1>
-  <p>RE/MAX Alliance — Every check runs against the same code the calculators use</p>
+  <p>REMAX Alliance — Every check runs against the same code the calculators use</p>
 </header>
 
 <div class="container">
@@ -114,13 +128,18 @@
   </div>
 
   <footer>
-    Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026.
+    <div class="office-disclosure">
+      <span class="od-name">REMAX Alliance</span>
+      <span class="od-line">8900 N Dixie Dr, Dayton, OH 45414 &middot; <a href="tel:+19378984400">(937) 898-4400</a> &middot; <a href="https://alliance-vandalia-dayton-oh.remax.com/" target="_blank" rel="noopener">alliance-vandalia-dayton-oh.remax.com</a></span>
+      <span class="od-line">Each Office Independently Owned and Operated.</span>
+    </div>
+    Plan terms current as of the REMAX Alliance fee sheet dated 08/27/2026.
   </footer>
 </div>
 
-<script src="fee-math.js?v=20260831j"></script>
-<script src="ohio-tax.js?v=20260831j"></script>
-<script src="tests.js?v=20260831j"></script>
+<script src="fee-math.js?v=20260904213231"></script>
+<script src="ohio-tax.js?v=20260904213231"></script>
+<script src="tests.js?v=20260904213231"></script>
 <script>
   // ---------- Automatic checks ----------
   const results = FeeMathTests.run();

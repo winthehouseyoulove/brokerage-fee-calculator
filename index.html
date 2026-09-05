@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RE/MAX Alliance — Plan Comparison</title>
+<title>REMAX Alliance — Plan Comparison</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831j"></script>
+<script src="page-flash.js?v=20260904213231"></script>
 <style>
   *, *::before, *::after { border-radius: 0 !important; }
   :root {
@@ -130,6 +130,20 @@
     gap: 12px 16px;
   }
   .brand { height: 30px; width: auto; display: block; }
+  /* Office logo lockup. The brand manual sets the office name between 50% and
+     100% of the height of the capitals in REMAX (about 19.5px at a 30px logo)
+     and puts it no closer than one width of the "M" stroke and no further than
+     three. 15px type and a 12px gap sit inside both windows. Black is one of
+     the approved office-name colours; the site's navy is not. */
+  .brand-lockup { display: flex; align-items: center; gap: 12px; }
+  .office-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #000000;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  @media (max-width: 420px) { .office-name { font-size: 13px; } }
   .top-nav {
     display: flex;
     gap: 6px;
@@ -624,6 +638,20 @@
     font-size: 12px;
     color: var(--muted);
   }
+  /* Required on every REMAX-branded page: the full office name, the office's
+     own contact information, and the independence notice. */
+  .office-disclosure {
+    display: block;
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .office-disclosure .od-name {
+    display: block;
+    font-weight: 600;
+    color: #232323;
+  }
+  .office-disclosure .od-line { display: block; }
+  .office-disclosure a { color: inherit; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -642,7 +670,10 @@
 </div>
 <header>
   <div class="header-bar">
-    <img class="brand" src="remax-logo.png" alt="RE/MAX" />
+    <div class="brand-lockup">
+      <img class="brand" src="remax-logo.png" alt="REMAX" />
+      <span class="office-name">Alliance</span>
+    </div>
     <nav class="top-nav">
       <a href="index.html" class="active">Plan Comparison</a>
       <a href="planning.html">Business Plan</a>
@@ -717,19 +748,24 @@
       <span class="ca-plus">+</span>
       <span class="ca-text">
         <b>Add custom plan</b>
-        <small>Compare both RE/MAX plans against your current brokerage.</small>
+        <small>Compare both REMAX plans against your current brokerage.</small>
       </span>
     </button>
   </div>
 
   <footer>
-    Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026. Monthly fees are plan fees only; enter MLS dues separately above.
+    <div class="office-disclosure">
+      <span class="od-name">REMAX Alliance</span>
+      <span class="od-line">8900 N Dixie Dr, Dayton, OH 45414 &middot; <a href="tel:+19378984400">(937) 898-4400</a> &middot; <a href="https://alliance-vandalia-dayton-oh.remax.com/" target="_blank" rel="noopener">alliance-vandalia-dayton-oh.remax.com</a></span>
+      <span class="od-line">Each Office Independently Owned and Operated.</span>
+    </div>
+    Plan terms current as of the REMAX Alliance fee sheet dated 08/27/2026. Monthly fees are plan fees only; enter MLS dues separately above.
   </footer>
 </div>
 
-<script src="fee-math.js?v=20260831j"></script>
-<script src="share.js?v=20260831j"></script>
-<script src="agents-embed.js?v=20260831j"></script>
+<script src="fee-math.js?v=20260904213231"></script>
+<script src="share.js?v=20260904213231"></script>
+<script src="agents-embed.js?v=20260904213231"></script>
 <script>
   const currentPlan = {
     key: 'current',
@@ -744,7 +780,7 @@
     postCapRate: 0.30,
   };
 
-  // The custom plan is off by default; most agents are comparing the two RE/MAX
+  // The custom plan is off by default; most agents are comparing the two REMAX
   // plans and do not need a third card in the way until they ask for it.
   let showCustom = false;
 
@@ -787,7 +823,7 @@
       `;
       return `
         <div class="plan ${isWinner ? 'winner' : ''}">
-          ${isWinner ? '<div class="winner-badge">Best RE/MAX Option</div>' : ''}
+          ${isWinner ? '<div class="winner-badge">Best REMAX Option</div>' : ''}
           ${r.plan.editable ? '<button type="button" class="plan-remove" id="btnRemoveCustom" aria-label="Remove this plan">&times;</button>' : ''}
           <div class="plan-header ${r.plan.color}">
             <h3>${r.plan.editable ? `<input class="name-edit" data-field="name" value="${r.plan.name.replace(/"/g, '&quot;')}" />` : r.plan.name}</h3>
@@ -802,7 +838,7 @@
               <div class="row"><span>Monthly Fees (×12)</span><span class="val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="row"><span>MLS Fees (×12)</span><span class="val">−${fmt(r.mlsTotal)}</span></div>
               <div class="row"><span>Transaction Fees (${transactions})</span><span class="val">−${fmt(r.transactionTotal)}</span></div>
-              <div class="row"><span>${r.plan.editable ? 'Annual Dues' : 'Annual RE/MAX Dues'}</span><span class="val">${r.plan.editable
+              <div class="row"><span>${r.plan.editable ? 'Annual Dues' : 'Annual REMAX Dues'}</span><span class="val">${r.plan.editable
                 ? `−$<input class="breakdown-edit" data-field="annualDues" value="${r.plan.annualDues.toLocaleString('en-US')}" />`
                 : `−${fmt(r.dues)}`}</span></div>
               <div class="row total"><span>Total Cost</span><span class="val">${fmt(r.totalCost)}</span></div>

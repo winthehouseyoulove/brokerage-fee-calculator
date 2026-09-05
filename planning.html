@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RE/MAX Alliance — Business Plan</title>
+<title>REMAX Alliance — Business Plan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260831j"></script>
+<script src="page-flash.js?v=20260904213231"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -404,6 +404,20 @@
     gap: 12px 16px;
   }
   .brand { height: 30px; width: auto; display: block; }
+  /* Office logo lockup. The brand manual sets the office name between 50% and
+     100% of the height of the capitals in REMAX (about 19.5px at a 30px logo)
+     and puts it no closer than one width of the "M" stroke and no further than
+     three. 15px type and a 12px gap sit inside both windows. Black is one of
+     the approved office-name colours; the site's navy is not. */
+  .brand-lockup { display: flex; align-items: center; gap: 12px; }
+  .office-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #000000;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  @media (max-width: 420px) { .office-name { font-size: 13px; } }
   .top-nav {
     display: flex;
     gap: 6px;
@@ -1430,7 +1444,7 @@
     margin: 12px 0 0;
   }
 
-  /* Funnel-embedded plan cards (2 RE/MAX plans between Before Tax Income and Volume) */
+  /* Funnel-embedded plan cards (2 REMAX plans between Before Tax Income and Volume) */
   .funnel-plans {
     width: 100%;
     max-width: 720px;
@@ -2040,6 +2054,20 @@
     font-size: 12px;
     color: var(--muted);
   }
+  /* Required on every REMAX-branded page: the full office name, the office's
+     own contact information, and the independence notice. */
+  .office-disclosure {
+    display: block;
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .office-disclosure .od-name {
+    display: block;
+    font-weight: 600;
+    color: #232323;
+  }
+  .office-disclosure .od-line { display: block; }
+  .office-disclosure a { color: inherit; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -2058,7 +2086,10 @@
 </div>
 <header>
   <div class="header-bar">
-    <img class="brand" src="remax-logo.png" alt="RE/MAX" />
+    <div class="brand-lockup">
+      <img class="brand" src="remax-logo.png" alt="REMAX" />
+      <span class="office-name">Alliance</span>
+    </div>
     <nav class="top-nav">
       <a href="index.html">Plan Comparison</a>
       <a href="planning.html" class="active">Business Plan</a>
@@ -2282,14 +2313,14 @@
 
         <p class="funnel-note" id="solveNote" style="margin: 0 0 12px;"></p>
 
-        <!-- Embedded RE/MAX plan cards -->
+        <!-- Embedded REMAX plan cards -->
         <div class="funnel-plans" id="funnelPlans"></div>
         <div class="custom-add" id="customAdd">
           <button type="button" id="btnAddCustom">
             <span class="ca-plus">+</span>
             <span class="ca-text">
               <b>Add custom plan</b>
-              <small>Compare both RE/MAX plans against your current brokerage.</small>
+              <small>Compare both REMAX plans against your current brokerage.</small>
             </span>
           </button>
         </div>
@@ -2384,7 +2415,7 @@
               <div class="cap">a week. That is the whole plan.</div>
             </div>
           </div>
-          <p class="ladder-note">The rates are yours to edit. The RE/MAX Alliance fee sheet includes Buffini coaching, which is built on exactly this math.</p>
+          <p class="ladder-note">The rates are yours to edit. The REMAX Alliance fee sheet includes Buffini coaching, which is built on exactly this math.</p>
         </div>
 
         <!-- Picked concept: the plan against the agent's own last year -->
@@ -2467,7 +2498,12 @@
 </style>
 
 <footer>
-  Plan terms current as of the RE/MAX Alliance fee sheet dated 08/27/2026. Monthly fees
+    <div class="office-disclosure">
+      <span class="od-name">REMAX Alliance</span>
+      <span class="od-line">8900 N Dixie Dr, Dayton, OH 45414 &middot; <a href="tel:+19378984400">(937) 898-4400</a> &middot; <a href="https://alliance-vandalia-dayton-oh.remax.com/" target="_blank" rel="noopener">alliance-vandalia-dayton-oh.remax.com</a></span>
+      <span class="od-line">Each Office Independently Owned and Operated.</span>
+    </div>
+  Plan terms current as of the REMAX Alliance fee sheet dated 08/27/2026. Monthly fees
   are plan fees only; MLS dues are a separate business expense above, defaulted to $90 a month.
   The tax figures are a planning estimate, not tax advice, and the S corporation comparison
   is a sketch of the tradeoff rather than a recommendation. It leaves out retirement
@@ -2476,11 +2512,11 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260831j"></script>
-<script src="ohio-tax.js?v=20260831j"></script>
-<script src="ohio-cities.js?v=20260831j"></script>
-<script src="share.js?v=20260831j"></script>
-<script src="agents-embed.js?v=20260831j"></script>
+<script src="fee-math.js?v=20260904213231"></script>
+<script src="ohio-tax.js?v=20260904213231"></script>
+<script src="ohio-cities.js?v=20260904213231"></script>
+<script src="share.js?v=20260904213231"></script>
+<script src="agents-embed.js?v=20260904213231"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -2627,7 +2663,7 @@
 
   const plans = [FeeMath.PLANS.noStress, FeeMath.PLANS.executive];
 
-  // The two RE/MAX plans, plus the agent's current plan once they add it.
+  // The two REMAX plans, plus the agent's current plan once they add it.
   const activePlans = () => state.showCustomPlan ? plans.concat([state.customPlan]) : plans;
 
   // A plan the agent named themselves already carries its own article.
@@ -2668,7 +2704,7 @@
 
   const solveRequiredTransactions = FeeMath.solveRequiredTransactions;
 
-  // ---------- Render RE/MAX plan cards INSIDE the funnel ----------
+  // ---------- Render REMAX plan cards INSIDE the funnel ----------
   // Solve for each plan's required volume → use the BEST plan's volume as the
   // shared target for the comparison. At that shared volume, each plan shows
   // its actual net: the best plan exactly hits the goal, the other comes up
@@ -3165,7 +3201,7 @@
     const shownRate = effectiveRatePct(personalGrossed);
     const avgPrice = state.avgPrice;
 
-    // Render the 2 RE/MAX plan cards embedded in the funnel, and grab the
+    // Render the 2 REMAX plan cards embedded in the funnel, and grab the
     // best plan's required volume for the bottom tier.
     const best = renderFunnelPlans(grossedUp, state.commissionRate, avgPrice);
     lastResult = best;

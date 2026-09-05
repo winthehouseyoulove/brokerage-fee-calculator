@@ -1,7 +1,7 @@
 // Checks on the fee math in fee-math.js. Runs in the browser via tests.html
 // and on the command line with `node tests.js`.
 //
-// Expected figures are worked by hand from the RE/MAX Alliance fee sheet dated
+// Expected figures are worked by hand from the REMAX Alliance fee sheet dated
 // 08/27/2026, not copied out of the code, so a change to the math breaks a test
 // instead of quietly moving the answer.
 (function (global) {
