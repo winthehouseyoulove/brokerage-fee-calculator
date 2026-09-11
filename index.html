@@ -195,6 +195,10 @@
     position: relative;
     margin-bottom: 20px;
   }
+  /* agent-search.js builds the box after the page first paints, so its
+     52px is held open from the start. Without it the card below jumped
+     when the box arrived, which PageSpeed scored as a layout shift. */
+  #agentLookup { min-height: 52px; }
   .agent-input { position: relative; }
   .agent-input input { padding-right: 40px; }
   /* type="search" brings its own clear button; this control has its own */
@@ -672,7 +676,7 @@
 </style>
 </head>
 <body>
-<div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" /></div>
+<div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" width="1112" height="308" /></div>
 <div class="save-dock">
   <button type="button" class="save-dock-btn" id="btnSaveLink"
           aria-label="Copy a link to this plan" title="Copy a link to this plan">
@@ -688,7 +692,7 @@
 <header>
   <div class="header-bar">
     <div class="brand-lockup">
-      <img class="brand" src="remax-logo.png" alt="REMAX" />
+      <img class="brand" src="remax-logo.png" alt="REMAX" width="1112" height="308" />
       <span class="office-name">Alliance</span>
     </div>
     <nav class="top-nav">

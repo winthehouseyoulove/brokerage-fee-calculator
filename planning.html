@@ -1481,7 +1481,9 @@
   /* The agent lookup card at the top of the page. Sized like the comparison
      page's, since it is the same control. */
   .step.lookup-step { background: var(--card); padding: 24px; margin-bottom: 24px; }
-  .agent-lookup { margin: 0; padding: 0; }
+  /* agent-search.js builds the box after the page first paints, so its
+     52px is held open from the start and nothing below it jumps. */
+  .agent-lookup { margin: 0; padding: 0; min-height: 52px; }
   .agent-lookup input { height: 52px; padding: 10px 14px; font-size: 16px; }
   .agent-lookup .agent-results { top: calc(100% + 4px); }
   .agent-lookup .agent-clear { right: 8px; width: 28px; height: 28px; font-size: 20px; }
@@ -2045,7 +2047,7 @@
 </style>
 </head>
 <body>
-<div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" /></div>
+<div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" width="1112" height="308" /></div>
 <div class="save-dock">
   <button type="button" class="save-dock-btn" id="btnSaveLink"
           aria-label="Copy a link to this plan" title="Copy a link to this plan">
@@ -2061,7 +2063,7 @@
 <header>
   <div class="header-bar">
     <div class="brand-lockup">
-      <img class="brand" src="remax-logo.png" alt="REMAX" />
+      <img class="brand" src="remax-logo.png" alt="REMAX" width="1112" height="308" />
       <span class="office-name">Alliance</span>
     </div>
     <nav class="top-nav">
