@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="favicon.png?v=1" sizes="192x192">
 <link rel="apple-touch-icon" href="favicon.png?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260904213231"></script>
+<script src="page-flash.js?v=20260911141650"></script>
 <style>
   *, *::before, *::after { border-radius: 0 !important; }
   :root {
@@ -699,17 +699,8 @@
 <div class="container">
   <div class="inputs">
     <h2>Your Production</h2>
-    <div class="agent-search">
-      <div class="agent-input">
-        <input type="search" id="agentSearch" name="mls-agent-lookup"
-               placeholder="Search an agent to fill in their 2025 production"
-               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-               role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="agentResults" />
-        <span class="agent-inline" id="agentInline" hidden></span>
-        <button type="button" class="agent-clear" id="agentClear" aria-label="Clear the search" hidden>&times;</button>
-      </div>
-      <div class="agent-results" id="agentResults"></div>
-    </div>
+    <!-- Built by agent-search.js, the same lookup the plan builder opens with -->
+    <div class="agent-search" id="agentLookup"></div>
     <div class="input-grid">
       <div class="field">
         <label for="volume">Annual Volume</label>
@@ -779,13 +770,16 @@
   </footer>
 </div>
 
-<script src="fee-math.js?v=20260904213231"></script>
-<script src="share.js?v=20260904213231"></script>
-<script src="agents-embed.js?v=20260904213231"></script>
+<script src="fee-math.js?v=20260911141650"></script>
+<script src="share.js?v=20260911141650"></script>
+<script src="agents-embed.js?v=20260911141650"></script>
+<script src="agent-search.js?v=20260911141650"></script>
 <script>
+  // Its terms are shared with the plan builder's custom plan, name included,
+  // so both pages start from the same default name.
   const currentPlan = {
     key: 'current',
-    name: 'Custom Plan',
+    name: 'Your Current Plan',
     color: 'gray',
     editable: true,
     monthly: 300,
@@ -920,7 +914,7 @@
 
   document.getElementById('btnAddCustom').addEventListener('click', () => {
     showCustom = true;
-    updateShare();
+    shareCustom();
     render();
     const nameEl = document.querySelector('.name-edit');
     if (nameEl) nameEl.focus();
@@ -929,7 +923,7 @@
   document.getElementById('plans').addEventListener('click', (e) => {
     if (!e.target.closest('#btnRemoveCustom')) return;
     showCustom = false;
-    updateShare();
+    shareCustom();
     render();
     document.getElementById('btnAddCustom').focus();
   });
@@ -939,6 +933,7 @@
     const field = el.dataset.field;
     if (el.classList.contains('name-edit')) {
       currentPlan.name = el.value;
+      shareCustom();
       return;
     }
     if (!el.classList.contains('spec-edit') && !el.classList.contains('breakdown-edit')) return;
@@ -955,6 +950,7 @@
     // which left the visible Split doing nothing. Keep the two in step instead.
     if (currentPlan.cap === 0) currentPlan.postCapRate = currentPlan.splitRate;
     const caret = el.selectionStart;
+    shareCustom();
     render();
     const fresh = document.querySelector(`[data-field="${field}"]`);
     if (fresh) { fresh.focus(); fresh.setSelectionRange(caret, caret); }
@@ -970,10 +966,12 @@
     if (i.transactions > 0) set('transactions', i.transactions);
     if (i.mls >= 0) set('mls', i.mls);
     if (i.commissionRate > 0) document.getElementById('commissionRate').value = String(i.commissionRate);
-    if (i.customPlan && typeof i.customPlan === 'object') Object.assign(currentPlan, i.customPlan);
-    showCustom = i.showCustom === true;
   }
-  Share.carryIntoLinks();
+  // The agent and the custom plan are shared with the builder, and whichever
+  // page touched them last wins. The agent is applied once the lookup is built.
+  const common = Share.common() || {};
+  Share.adoptPlan(currentPlan, common.customPlan);
+  if (typeof common.showCustom === 'boolean') showCustom = common.showCustom;
 
   // Keep the link in the address bar describing what is on screen, so copying
   // it from here carries the edits made here. The builder's half rides along
@@ -984,9 +982,10 @@
       transactions: readNum('transactions'),
       commissionRate: Number(document.getElementById('commissionRate').value) || 0,
       mls: readNum('mls'),
-      showCustom: showCustom,
-      customPlan: currentPlan,
     });
+  }
+  function shareCustom() {
+    Share.setCommon({ customPlan: Share.planTerms(currentPlan), showCustom: showCustom });
   }
   document.querySelector('.container').addEventListener('input', updateShare);
   updateShare();
@@ -995,126 +994,52 @@
   updateAvgPrice();
   render();
 
-  // --- Agent search ---
-  const agents = [...(window.__AGENTS__ || [])].sort((a, b) => a.name.localeCompare(b.name));
-  const MAX_RESULTS = 50;
-  let totalMatches = 0;
-  let activeIndex = -1;
-  const searchEl = document.getElementById('agentSearch');
-  const resultsEl = document.getElementById('agentResults');
-  const inlineEl = document.getElementById('agentInline');
-
-  // Figures for the agent now loaded, sitting inside the search field. The
-  // input is padded to whatever they take so a typed name cannot run under
-  // them; a hidden span measures zero, leaving room for just the x.
-  function showInline(agent) {
-    inlineEl.hidden = !agent;
-    inlineEl.innerHTML = agent
-      ? `<span><b>${agent.units}</b> ${agent.units === 1 ? 'unit' : 'units'}</span>`
-        + `<span><b>$${agent.volume.toLocaleString('en-US')}</b> volume</span>`
-      : '';
-    searchEl.style.paddingRight = (inlineEl.offsetWidth + 48) + 'px';
-  }
-
-  function filterAgents(q) {
-    q = q.trim().toLowerCase();
-    const hits = q
-      ? agents.filter(a => a.name.toLowerCase().includes(q) || a.office.toLowerCase().includes(q))
-      : agents;
-    totalMatches = hits.length;
-    return hits.slice(0, MAX_RESULTS);
-  }
-
-  function renderResults(matches) {
-    if (!matches.length) {
-      resultsEl.innerHTML = '<div class="agent-result"><span class="ar-empty">No matches</span></div>';
-      resultsEl.classList.add('open');
-      return;
-    }
-    resultsEl.innerHTML = matches.map((a, i) => `
-      <div class="agent-result${i === activeIndex ? ' active' : ''}" data-index="${i}">
-        <span class="ar-who">
-          <span class="ar-name">${a.name}</span>
-          <span class="ar-office">${a.office}</span>
-        </span>
-        <span class="ar-stats">${a.units} units · $${a.volume.toLocaleString('en-US')}</span>
-      </div>
-    `).join('') + (totalMatches > matches.length
-      ? `<div class="agent-result ar-more">Showing ${matches.length} of ${totalMatches} — keep typing to narrow</div>`
-      : '');
-    resultsEl.classList.add('open');
-    searchEl.setAttribute('aria-expanded', 'true');
-  }
-
-  function selectAgent(agent) {
+  // --- Agent search, the same one the plan builder opens with (agent-search.js) ---
+  // Picking an agent fills in their 2025 production. The agent is shared with
+  // the builder, and whenever one is set this page shows their own production,
+  // ahead of the plan numbers the builder hands over.
+  // The agent whose production is on screen. A change to the custom plan
+  // alone must not refill the fields over edits made here.
+  let shownAgent = '';
+  // Units go in as the MLS records them, halves included, so the average sale
+  // price here is volume over units: the figure the search shows and the plan
+  // builder uses. Rounding 8.5 units to 9 had this page quoting a lower one.
+  function fillProduction(agent) {
+    shownAgent = agent.name;
     document.getElementById('volume').value = agent.volume.toLocaleString('en-US');
-    document.getElementById('transactions').value = String(Math.round(agent.units));
+    document.getElementById('transactions').value = String(agent.units);
     updateAvgPrice();
     render();
-    searchEl.value = agent.name;
-    syncClear();
-    resultsEl.classList.remove('open');
-    searchEl.setAttribute('aria-expanded', 'false');
-    showInline(agent);
+    updateShare();
+  }
+  const lookup = AgentSearch.mount(document.getElementById('agentLookup'), {
+    onSelect(agent) {
+      fillProduction(agent);
+      Share.setCommon({ agentName: agent.name });
+    },
+    onClear() {
+      shownAgent = '';
+      Share.setCommon({ agentName: '' });
+    },
+  });
+  const sharedAgent = AgentSearch.find(common.agentName);
+  if (sharedAgent) {
+    lookup.show(sharedAgent);
+    fillProduction(sharedAgent);
   }
 
-  const clearEl = document.getElementById('agentClear');
-  // Shown whenever there is text to clear, matched agent or not. Safari filling
-  // the box uninvited is exactly when it is wanted most.
-  function syncClear() { clearEl.hidden = searchEl.value.trim() === ''; }
-  clearEl.addEventListener('click', () => {
-    searchEl.value = '';
-    showInline(null);
-    resultsEl.classList.remove('open');
-    searchEl.setAttribute('aria-expanded', 'false');
-    syncClear();
-  });
-  syncClear();
-
-  searchEl.addEventListener('input', () => {
-    activeIndex = -1;
-    showInline(null);
-    syncClear();
-    renderResults(filterAgents(searchEl.value));
-  });
-
-  searchEl.addEventListener('focus', () => {
-    activeIndex = -1;
-    renderResults(filterAgents(searchEl.value));
-  });
-
-  searchEl.addEventListener('keydown', (e) => {
-    const matches = filterAgents(searchEl.value);
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeIndex = Math.min(activeIndex + 1, matches.length - 1);
-      renderResults(matches);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeIndex = Math.max(activeIndex - 1, 0);
-      renderResults(matches);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const pick = matches[activeIndex >= 0 ? activeIndex : 0];
-      if (pick) selectAgent(pick);
-    } else if (e.key === 'Escape') {
-      resultsEl.classList.remove('open');
+  // Another tab changed the agent or the custom plan, or the browser brought
+  // this page back from its cache after the plan builder changed them.
+  Share.onCommonChange(c => {
+    Share.adoptPlan(currentPlan, c.customPlan);
+    if (typeof c.showCustom === 'boolean') showCustom = c.showCustom;
+    const agent = AgentSearch.find(c.agentName);
+    if ((agent ? agent.name : '') !== shownAgent) {
+      lookup.show(agent);
+      shownAgent = agent ? agent.name : '';
+      if (agent) { fillProduction(agent); return; }
     }
-  });
-
-  resultsEl.addEventListener('click', (e) => {
-    const item = e.target.closest('.agent-result');
-    if (!item || !item.dataset.index) return;
-    const matches = filterAgents(searchEl.value);
-    const pick = matches[Number(item.dataset.index)];
-    if (pick) selectAgent(pick);
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.agent-search')) {
-      resultsEl.classList.remove('open');
-      searchEl.setAttribute('aria-expanded', 'false');
-    }
+    render();
   });
 </script>
 </body>

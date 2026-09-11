@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" href="favicon.png?v=1" sizes="192x192">
 <link rel="apple-touch-icon" href="favicon.png?v=1">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="page-flash.js?v=20260904213231"></script>
+<script src="page-flash.js?v=20260911141650"></script>
 <style>
   /* Square everything */
   *, *::before, *::after { border-radius: 0 !important; }
@@ -129,8 +129,8 @@
   }
   .city-rate input:focus { outline: none; }
 
-  /* ---------- The three picked concepts ---------- */
-  .ladder-block, .anchor-block, .checks-block {
+  /* ---------- The picked concepts ---------- */
+  .ladder-block, .anchor-block {
     width: 100%;
     background: var(--card);
     border: 2px solid var(--border);
@@ -164,18 +164,6 @@
   .anchor-svg { width: 100%; height: auto; display: block; }
   .anchor-line { font-size: 13px; margin: 10px 0 0; max-width: 58ch; }
   .anchor-line b { color: var(--remax-red); }
-
-  .checks-row { display: flex; align-items: flex-end; gap: 3px; height: 72px; }
-  .check-stub { flex: 1; min-width: 3px; background: #cfc8b2; }
-  .check-stub.fat { background: var(--remax-blue); }
-  .check-divider { flex: none; width: 0; height: 100%; border-left: 2px dashed var(--remax-red); }
-  .checks-legend {
-    display: flex; justify-content: space-between; gap: 10px;
-    font-size: 11px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums;
-  }
-  .checks-legend b { color: var(--text); }
-  .checks-legend .cd { color: var(--remax-red); font-weight: 700; }
-  .checks-note { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
 
   /* The bill, four parts adding to one answer at the bottom */
   .tax-breakdown {
@@ -266,7 +254,6 @@
   .funnel-flow:nth-of-type(12) { animation-delay: 0.55s; }
   .avg-price-card { animation-delay: 0.60s; }
   .funnel-flow:nth-of-type(14) { animation-delay: 0.65s; }
-  .funnel-tier.t4 { animation-delay: 0.70s; }
 
   /* Hover lift on plan cards */
   .funnel-plan { transition: transform 0.2s ease-out, border-color 0.2s, box-shadow 0.2s; }
@@ -970,7 +957,6 @@
   .funnel-tier.t1 { background: var(--remax-blue); max-width: 420px; }
   .funnel-tier.t2 { background: var(--remax-blue); max-width: 500px; }
   .funnel-tier.t3 { background: var(--remax-red); max-width: 720px; }
-  .funnel-tier.t4 { background: var(--remax-red); max-width: 420px; }
   .funnel-tier .tier-step {
     font-size: 10px;
     font-weight: 700;
@@ -1338,14 +1324,16 @@
     margin: 0 0 18px;
   }
 
-  /* Closing answer card */
+  /* The answer card. It sits where the deals tier used to, straight under the
+     arrow from the sale price that produces it, so it takes no top margin, and
+     it anchors the deal count's ? tooltip. */
   .plan-summary {
+    position: relative;
     width: 100%;
     max-width: 720px;
     background: var(--remax-blue-dark);
     color: var(--bg);
     padding: 30px 34px 26px;
-    margin-top: 26px;
     border-top: 6px solid var(--remax-red);
   }
   .plan-summary .ps-kicker {
@@ -1399,6 +1387,14 @@
     margin: 14px 0 0;
   }
   .ps-note:empty { display: none; }
+  /* The tooltip's own Dark Blue is this card's ground, so inside the card it
+     takes Bridge Blue and a light edge to stand off it. */
+  .plan-summary .tier-tooltip {
+    background-color: var(--remax-blue);
+    border: 1px solid rgba(247, 245, 238, 0.3);
+    text-align: left;
+  }
+  .plan-summary .tier-tooltip::after { border-top-color: var(--remax-blue); }
   @media (max-width: 600px) {
     .plan-summary { padding: 22px 20px 20px; }
     .ps-hero { font-size: 28px; }
@@ -1475,9 +1471,22 @@
     .funnel-plans, .funnel-plans.has-custom { grid-template-columns: 1fr; }
   }
 
-  /* The agent search sits inside the average sale price card */
-  .apc-agent { margin: 0 0 12px; padding: 0; }
-  .apc-agent input { height: 38px; font-size: 14px; }
+  /* The agent lookup card at the top of the page. Sized like the comparison
+     page's, since it is the same control. */
+  .step.lookup-step { background: var(--card); padding: 24px; margin-bottom: 24px; }
+  .agent-lookup { margin: 0; padding: 0; }
+  .agent-lookup input { height: 52px; padding: 10px 14px; font-size: 16px; }
+  .agent-lookup .agent-results { top: calc(100% + 4px); }
+  .agent-lookup .agent-clear { right: 8px; width: 28px; height: 28px; font-size: 20px; }
+  .agent-lookup .agent-inline { right: 40px; gap: 12px; }
+  .agent-result .ar-who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .agent-result .ar-office {
+    font-size: 12px; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .agent-result .ar-stats { white-space: nowrap; padding-left: 12px; }
+  .agent-result.ar-more { cursor: default; justify-content: center; font-size: 12px; color: var(--muted); }
+  .agent-result.ar-more:hover { background: none; }
   .agent-input { position: relative; }
   .agent-input input { padding-right: 34px; }
   /* type="search" brings its own clear button; this control has its own */
@@ -2056,6 +2065,13 @@
 <div class="layout">
   <div class="main-col">
 
+    <!-- The agent lookup, built by agent-search.js: the same control the
+         comparison page opens with, and the agent is shared between them -->
+    <div class="step lookup-step">
+      <h2>Your Production</h2>
+      <div class="agent-search agent-lookup" id="agentLookup"></div>
+    </div>
+
     <!-- Step 1: Expenses -->
     <div class="step expense-step">
       <div class="card-top">
@@ -2320,17 +2336,6 @@
         <!-- Average Sale Price card with inline label and bottom slider -->
         <div class="avg-price-card">
           <div class="apc-label">Average Sale Price</div>
-          <div class="agent-search apc-agent">
-            <div class="agent-input">
-              <input type="search" id="agentSearch" name="mls-agent-lookup"
-                     placeholder="Search an agent to use their average sale price"
-                     autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                     role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="agentResults" />
-              <span class="agent-inline" id="agentInline" hidden></span>
-              <button type="button" class="agent-clear" id="agentClear" aria-label="Clear the matched agent" hidden>&times;</button>
-            </div>
-            <div class="agent-results" id="agentResults"></div>
-          </div>
           <div class="apc-input">
             <span class="apc-prefix">$</span>
             <input type="text" inputmode="numeric" id="avgPrice" value="400,000" />
@@ -2345,12 +2350,17 @@
           <div class="flow-arrow"></div>
         </div>
 
-        <!-- Tier 4: Total Transactions / Year -->
-        <div class="funnel-tier t4">
+        <!-- The answer: the deals the plan needs, with the math behind its ? -->
+        <div class="plan-summary" id="planSummary" hidden>
           <div class="tier-tooltip wide" id="dealsTooltip"></div>
-          <div class="tier-num" id="totalTransactions">0</div>
-          <div class="tier-label">Total Transactions / Year<span class="tier-info" id="dealsInfo" tabindex="0">?</span></div>
-          <div class="tier-sub" id="cadence">0 per month</div>
+          <span class="ps-kicker">The plan</span>
+          <div class="ps-hero"><span id="psDeals"></span><span class="tier-info" id="dealsInfo" tabindex="0">?</span><small id="psPlanName"></small></div>
+          <div class="ps-stats">
+            <div><b id="psPace"></b><span>pace</span></div>
+            <div><b id="psVolume"></b><span>annual volume</span></div>
+            <div><b id="psTakeHome"></b><span>your year, paid for</span></div>
+          </div>
+          <p class="ps-note" id="psNote"></p>
         </div>
         <p class="funnel-note" id="surplusNote"></p>
 
@@ -2379,26 +2389,6 @@
           <div class="dist-head">Against your own last year</div>
           <svg class="anchor-svg" id="anchorSvg" viewBox="0 0 640 200" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="anchorLine"></svg>
           <p class="anchor-line" id="anchorLine"></p>
-        </div>
-
-
-        <div class="plan-summary" id="planSummary" hidden>
-          <span class="ps-kicker">The plan</span>
-          <div class="ps-hero"><span id="psDeals"></span><small id="psPlanName"></small></div>
-          <div class="ps-stats">
-            <div><b id="psPace"></b><span>pace</span></div>
-            <div><b id="psVolume"></b><span>annual volume</span></div>
-            <div><b id="psTakeHome"></b><span>your year, paid for</span></div>
-          </div>
-          <p class="ps-note" id="psNote"></p>
-        </div>
-
-        <!-- Picked concept: the year as a row of checks, thin then fat -->
-        <div class="checks-block" id="checksBlock" hidden>
-          <div class="dist-head">The year in checks</div>
-          <div class="checks-row" id="checksRow"></div>
-          <div class="checks-legend" id="checksLegend"></div>
-          <p class="checks-note" id="checksNote"></p>
         </div>
 
         <div class="flow-block" id="flowBlock" hidden>
@@ -2442,7 +2432,7 @@
     .line-item { break-inside: avoid; }
     .funnel-tier, .funnel-plan, .tax-rate-card, .commission-card,
     .avg-price-card, .flow-block, .simple-panel, .plan-summary,
-    .ladder-block, .anchor-block, .checks-block { break-inside: avoid; }
+    .ladder-block, .anchor-block { break-inside: avoid; }
     .demo-banner { display: none !important; }
     .plan-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .funnel-plans { break-inside: avoid; }
@@ -2469,11 +2459,12 @@
   elect, and at what wage, is a decision for your CPA.
 </footer>
 
-<script src="fee-math.js?v=20260904213231"></script>
-<script src="ohio-tax.js?v=20260904213231"></script>
-<script src="ohio-cities.js?v=20260904213231"></script>
-<script src="share.js?v=20260904213231"></script>
-<script src="agents-embed.js?v=20260904213231"></script>
+<script src="fee-math.js?v=20260911141650"></script>
+<script src="ohio-tax.js?v=20260911141650"></script>
+<script src="ohio-cities.js?v=20260911141650"></script>
+<script src="share.js?v=20260911141650"></script>
+<script src="agents-embed.js?v=20260911141650"></script>
+<script src="agent-search.js?v=20260911141650"></script>
 <script>
   // The Dayton roster: name, units and volume for 999 agents.
   // Declared here because the state below seeds itself from it.
@@ -2555,6 +2546,10 @@
 
   // Pristine copy for "Load demo numbers" and for clearing back to a known base
   const DEFAULTS = JSON.parse(JSON.stringify(state));
+
+  // The agent lookup, built by agent-search.js further down. Declared here so
+  // syncInputs() can reach it from the first render on.
+  let lookup = null;
 
   // ---------- Persistence ----------
   // Private windows and blocked site data throw on access, so every call is
@@ -2662,10 +2657,12 @@
   const solveRequiredTransactions = FeeMath.solveRequiredTransactions;
 
   // ---------- Render REMAX plan cards INSIDE the funnel ----------
-  // Solve for each plan's required volume → use the BEST plan's volume as the
-  // shared target for the comparison. At that shared volume, each plan shows
-  // its actual net: the best plan exactly hits the goal, the other comes up
-  // short (or over, if it has a worse cap structure).
+  // Each card is solved on its own: the fewest deals that plan needs to net the
+  // goal, and what the agent keeps at that count. Picking a plan only decides
+  // which one the funnel below is built on, so the cards hold still when the
+  // agent switches. Pricing every card at the picked plan's deal count made
+  // both nets jump on a click. The best option is the REMAX plan that needs
+  // the fewest deals, with the higher net breaking a tie.
   function renderFunnelPlans(targetNet, commissionPct, avgPrice) {
     const container = document.getElementById('funnelPlans');
     const addBtn = document.getElementById('customAdd');
@@ -2686,16 +2683,21 @@
     // The funnel below is built on the plan the agent picked. Until they pick
     // one it runs on the plan that needs the fewest deals.
     const chosen = solved.find(x => x.plan.key === state.selectedPlan) || best;
-    const sharedTxn = chosen.transactions;
-    const sharedVolume = sharedTxn * avgPrice;
-    const sharedGci = sharedVolume * (commissionPct / 100);
 
-    const cards = onPage.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
-    const winnerNet = Math.max(...cards.filter(c => !c.plan.editable).map(c => c.net));
+    // A plan that cannot reach the goal at all is shown at the chosen plan's count.
+    const cards = onPage.map(p => {
+      const own = solved.find(x => x.plan === p);
+      const txn = own ? own.transactions : chosen.transactions;
+      const gci = txn * avgPrice * (commissionPct / 100);
+      return { plan: p, txn, gci, ...compute(p, gci, txn, 0) };
+    });
+    const winner = cards.filter(c => !c.plan.editable).reduce((a, b) =>
+      (b.txn < a.txn || (b.txn === a.txn && b.net > a.net)) ? b : a);
+    const chosenCard = cards.find(c => c.plan === chosen.plan);
 
     container.innerHTML = cards.map(r => {
-      const isWinner = !r.plan.editable && r.net === winnerNet;
-      const isChosen = r.plan.key === chosen.plan.key;
+      const isWinner = r === winner;
+      const isChosen = r === chosenCard;
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
       const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
       const specs = r.plan.editable ? `
@@ -2722,7 +2724,7 @@
           </div>
           <div class="fp-body">
             <div class="fp-breakdown fp-breakdown-top">
-              <div class="fp-row"><span>GCI (${sharedTxn} txns)</span><span class="fp-val">${fmt(sharedGci)}</span></div>
+              <div class="fp-row"><span>GCI (${r.txn} txns)</span><span class="fp-val">${fmt(r.gci)}</span></div>
               <div class="fp-row"><span>Brokerage Split</span><span class="fp-val">−${fmt(r.splitCost)}</span></div>
               <div class="fp-row"><span>Monthly Fees (×12)</span><span class="fp-val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="fp-row"><span>Transaction Fees</span><span class="fp-val">−${fmt(r.transactionTotal)}</span></div>
@@ -2738,12 +2740,10 @@
       `;
     }).join('');
 
-    const winnerName = (cards.find(c => !c.plan.editable && c.net === winnerNet) || { plan: {} }).plan.name || '';
-    const chosenCard = cards.find(c => c.plan.key === chosen.plan.key);
     return {
-      volume: sharedVolume, gci: sharedGci, transactions: sharedTxn,
-      net: chosenCard ? chosenCard.net : winnerNet,
-      winnerName, chosenName: chosen.plan.name, chosenPlan: chosen.plan,
+      volume: chosenCard.txn * avgPrice, gci: chosenCard.gci, transactions: chosenCard.txn,
+      net: chosenCard.net,
+      winnerName: winner.plan.name, chosenName: chosen.plan.name,
     };
   }
 
@@ -3026,47 +3026,6 @@
             + ' than your 2025</b>. You have headroom: the goal could rise, or the year could breathe.');
   }
 
-  // ---------- Picked concept: the year in checks ----------
-  // Every closing drawn as a stub whose height is that deal's net after the
-  // split and the per-transaction fee. The cap is the visible break: thin
-  // checks, then fat ones. Monthly fees and dues are not per-deal, so they
-  // stay out of the stubs and the caption says so.
-  function renderChecks(plan, gciPerDeal, txn) {
-    const block = document.getElementById('checksBlock');
-    if (!block) return;
-    if (!plan || !(txn > 0) || !(gciPerDeal > 0) || txn > 120) { block.hidden = true; return; }
-    block.hidden = false;
-
-    const splitCost = g => FeeMath.compute(plan, g, 0, 0).splitCost;
-    const nets = [];
-    let capDeal = 0;
-    for (let k = 1; k <= txn; k++) {
-      nets.push(gciPerDeal - (splitCost(k * gciPerDeal) - splitCost((k - 1) * gciPerDeal)) - plan.perTransaction);
-      if (!capDeal && FeeMath.compute(plan, k * gciPerDeal, 0, 0).capMet) capDeal = k;
-    }
-    const maxNet = Math.max.apply(null, nets);
-    const capped = capDeal > 0 && capDeal <= txn;
-
-    let html = '';
-    nets.forEach((n, i) => {
-      const k = i + 1;
-      if (capped && k === capDeal + 1) html += '<div class="check-divider"></div>';
-      const h = Math.max(16, Math.round((n / maxNet) * 68));
-      html += '<div class="check-stub' + (capped && k > capDeal ? ' fat' : '') + '" style="height:' + h + 'px" title="Deal '
-        + k + ': ' + fmt(n) + '"></div>';
-    });
-    document.getElementById('checksRow').innerHTML = html;
-
-    const pre = nets[0], post = nets[nets.length - 1];
-    document.getElementById('checksLegend').innerHTML = capped
-      ? '<span><b>' + fmt(pre) + '</b> each</span><span class="cd">cap fills at deal ' + capDeal + '</span><span><b>' + fmt(post) + '</b> each</span>'
-      : '<span><b>' + fmt(pre) + '</b> each</span><span>' + (plan.cap > 0 ? 'the cap does not fill this year' : 'no cap on this plan') + '</span>';
-    document.getElementById('checksNote').textContent =
-      'Each check is your side of one ' + fmt(gciPerDeal / (state.commissionRate / 100)).replace('$', '$')
-      + ' closing after the ' + plan.name + ' split and the ' + fmt(plan.perTransaction)
-      + ' transaction fee. Monthly fees and dues come out separately.';
-  }
-
   // ---------- What the year has to cover ----------
   // Single source of truth for both modes, so the funnel below never has to
   // care which one is on.
@@ -3250,8 +3209,6 @@
         <span class="tt-result">= ${fmt(requiredVolume)} volume</span>
       `;
     }
-    setAndPulse('totalTransactions', String(totalTransactions));
-    setAndPulse('cadence', cadenceText(totalTransactions));
 
     // With nothing entered, teach what to do instead of showing a $0 funnel
     const isEmpty = !(grossedUp > 0) || totalTransactions <= 0;
@@ -3337,12 +3294,15 @@
                lifeShare, Math.max(0, pocket - lifeShare));
     renderLadder(isEmpty ? 0 : totalTransactions);
     renderAnchor(isEmpty ? 0 : totalTransactions);
-    renderChecks(best.chosenPlan, avgPrice * (state.commissionRate / 100),
-                 isEmpty ? 0 : totalTransactions);
 
     const payload = sharePayload();
     Share.contribute('p', payload.p);
     Share.contribute('i', payload.i);
+    Share.setCommon({
+      agentName: state.agentName,
+      customPlan: Share.planTerms(state.customPlan),
+      showCustom: state.showCustomPlan,
+    });
     saveState();
   }
 
@@ -3366,8 +3326,8 @@
     document.getElementById('goalTakeHome').value = state.goalTakeHome.toLocaleString('en-US');
     document.getElementById('simpleBusiness').value = state.simpleBusiness.toLocaleString('en-US');
     document.getElementById('simpleOtherIncome').value = state.simpleOtherIncome.toLocaleString('en-US');
-    const search = document.getElementById('agentSearch');
-    if (search) search.value = state.agentName || '';
+    if (lookup) lookup.show(AgentSearch.find(state.agentName));
+    renderAvgPriceNote();
     document.getElementById('cityRate').value = String(state.cityRate);
     document.getElementById('citySearch').value = state.cityName || '';
     document.getElementById('rateClose').value = String(state.ladderClose);
@@ -3393,36 +3353,38 @@
     // No roster loaded means no reference to give, so drop the note entirely.
     if (!prices.length) { el.remove(); return; }
     const money = n => '$' + toStep(n).toLocaleString('en-US');
-    const search = document.getElementById('agentSearch');
-    const inline = document.getElementById('agentInline');
-    const clear = document.getElementById('agentClear');
-    const agent = state.agentName
-      ? agents.find(a => a.name === state.agentName && a.units > 0)
-      : null;
-    if (clear) clear.hidden = search.value.trim() === '';
-    if (inline) {
-      inline.hidden = !agent;
-      inline.innerHTML = agent
-        ? `<span><b>${agent.units}</b> ${agent.units === 1 ? 'unit' : 'units'}</span>`
-          + `<span><b>${money(agent.volume / agent.units)}</b> avg sale</span>`
-        : '';
-      // Keep the typed name from running under the figures. A hidden span
-      // measures zero, so the padding falls back to just the x.
-      search.style.paddingRight = (inline.offsetWidth + 42) + 'px';
-    }
-    // The agent's own figures are in the line above, so this stays the market
-    // reference and does not say the same thing twice.
-    el.textContent = (agent ? '' : 'No agent matched, so this starts at the area median. ')
+    const agent = AgentSearch.find(state.agentName);
+    // The lookup sits at the top of the page, far from this card, so the note
+    // names the agent whose price is in play.
+    el.textContent = (agent
+        ? `This starts at ${agent.name}'s own 2025 average sale, $${AgentSearch.avgSale(agent).toLocaleString('en-US')}. `
+        : 'No agent matched, so this starts at the area median. ')
       + `Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
       + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
       + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
+  }
+
+  // The agent and the custom plan are shared with the comparison page, and
+  // whichever page touched them last wins. A new agent brings their own
+  // average sale price; the same agent leaves alone a price the reader has
+  // moved since.
+  function applyCommon(c) {
+    if (!c) return;
+    if (typeof c.agentName === 'string' && c.agentName !== state.agentName) {
+      const agent = AgentSearch.find(c.agentName);
+      state.agentName = agent ? agent.name : '';
+      state.avgPrice = agent ? AgentSearch.avgSale(agent) : medianAvgPrice();
+    }
+    Share.adoptPlan(state.customPlan, c.customPlan);
+    if (typeof c.showCustom === 'boolean') state.showCustomPlan = c.showCustom;
+    if (!state.showCustomPlan && state.selectedPlan === 'custom') state.selectedPlan = '';
   }
 
   // A link the user was sent describes a specific plan, so it outranks
   // whatever this browser happens to have saved.
   const shared = Share.begin();
   const restored = Share.adopt(state, shared.p) || loadState();
-  Share.carryIntoLinks();
+  applyCommon(Share.common());
   renderAvgPriceNote();
   syncInputs();
   recompute();
@@ -3756,7 +3718,7 @@
   // hover does not exist on a phone.
   function bindInfo(infoId, tipId) {
     const info = document.getElementById(infoId);
-    const tier = info && (info.closest('.funnel-tier') || info.closest('.trc-col'));
+    const tier = info && (info.closest('.funnel-tier') || info.closest('.trc-col') || info.closest('.plan-summary'));
     const tip = document.getElementById(tipId);
     if (!info || !tier || !tip) return;
     function position() {
@@ -3799,10 +3761,10 @@
     ['.commission-card'],
     ['.funnel-tier.t3'],
     ['.avg-price-card'],
-    ['.funnel-tier.t4', '#surplusNote', '#ladderBlock', '#anchorBlock', '#planSummary', '#checksBlock', '#flowBlock'],
+    ['#planSummary', '#surplusNote', '#ladderBlock', '#anchorBlock', '#flowBlock'],
   ];
   const REVEAL_LABELS = [
-    'What tax does to that number',
+    'What is your tax rate?',
     'What you have to earn before tax',
     'Compare the plans',
     'Set your commission rate',
@@ -3981,6 +3943,10 @@
     const cp = state.customPlan;
     if (field === 'name') {
       cp.name = e.target.value;
+      // A rename changes no number, so it skips the recompute, but the
+      // comparison page and the saved plan still need the new name.
+      Share.setCommon({ customPlan: Share.planTerms(cp) });
+      saveState();
       return;
     }
     const raw = Number(e.target.value.replace(/,/g, '')) || 0;
@@ -4008,30 +3974,10 @@
     if (nameEl) nameEl.focus();
   });
 
-  // ---------- Agent search: use the agent's own average sale price ----------
-  const searchEl = document.getElementById('agentSearch');
-  const resultsEl = document.getElementById('agentResults');
-  let activeIndex = -1;
-
-  function filterAgents(q) {
-    q = q.trim().toLowerCase();
-    const sorted = [...agents].filter(a => a.units > 0 && a.volume > 0)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    return q ? sorted.filter(a => a.name.toLowerCase().includes(q)) : sorted;
-  }
-
-  function renderResults(matches) {
-    resultsEl.innerHTML = matches.length
-      ? matches.slice(0, 50).map((a, i) => `
-          <div class="agent-result${i === activeIndex ? ' active' : ''}" data-index="${i}">
-            <span class="ar-name">${a.name}</span>
-            <span class="ar-stats">${fmt(a.volume / a.units)} average sale</span>
-          </div>`).join('')
-      : '<div class="agent-result"><span class="ar-empty">No matches</span></div>';
-    resultsEl.classList.add('open');
-    searchEl.setAttribute('aria-expanded', 'true');
-  }
-
+  // ---------- Agent search, shared with the comparison page (agent-search.js) ----------
+  // Picking an agent puts their own 2025 average sale price into the plan and
+  // draws their year against it in the last-year anchor. The agent travels to
+  // the comparison page, which fills in their production from it.
   function setAvgPrice(value) {
     state.avgPrice = value;
     const slider = document.getElementById('avgPriceSlider');
@@ -4041,69 +3987,27 @@
     document.getElementById('avgPrice').value = value.toLocaleString('en-US');
   }
 
-  function selectAgent(agent) {
-    state.agentName = agent.name;
-    state.touched = true;
-    setAvgPrice(toStep(agent.volume / agent.units));
-    searchEl.value = agent.name;
-    resultsEl.classList.remove('open');
-    searchEl.setAttribute('aria-expanded', 'false');
+  function useAgent(agent) {
+    state.agentName = agent ? agent.name : '';
+    // The agent's own figure to the dollar, not rounded to the slider's step,
+    // so it matches the comparison page and the search field.
+    setAvgPrice(agent ? AgentSearch.avgSale(agent) : medianAvgPrice());
     renderAvgPriceNote();
-    syncClear();
     recompute();
   }
+  lookup = AgentSearch.mount(document.getElementById('agentLookup'), {
+    onSelect(agent) { state.touched = true; useAgent(agent); },
+    onClear() { useAgent(null); },
+  });
+  lookup.show(AgentSearch.find(state.agentName));
 
-  function clearAgent() {
-    state.agentName = '';
-    setAvgPrice(medianAvgPrice());
-    searchEl.value = '';
-    resultsEl.classList.remove('open');
-    searchEl.setAttribute('aria-expanded', 'false');
-    renderAvgPriceNote();
-    syncClear();
+  // Another tab changed the agent or the custom plan, or the browser brought
+  // this page back from its cache after the comparison page changed them.
+  Share.onCommonChange(c => {
+    applyCommon(c);
+    syncInputs();
     recompute();
-  }
-
-  // The x is there whenever there is something to clear, not only once an
-  // agent is matched. Half-typed text needs clearing too, and Safari filling
-  // the box uninvited is exactly when it is wanted most.
-  function syncClear() {
-    document.getElementById('agentClear').hidden = searchEl.value.trim() === '';
-  }
-
-  searchEl.addEventListener('input', () => { activeIndex = -1; syncClear(); renderResults(filterAgents(searchEl.value)); });
-  searchEl.addEventListener('focus', () => { activeIndex = -1; renderResults(filterAgents(searchEl.value)); });
-  searchEl.addEventListener('keydown', (e) => {
-    const matches = filterAgents(searchEl.value);
-    if (e.key === 'ArrowDown') {
-      e.preventDefault(); activeIndex = Math.min(activeIndex + 1, matches.length - 1); renderResults(matches);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault(); activeIndex = Math.max(activeIndex - 1, 0); renderResults(matches);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const pick = matches[activeIndex >= 0 ? activeIndex : 0];
-      if (pick) selectAgent(pick);
-    } else if (e.key === 'Escape') {
-      resultsEl.classList.remove('open');
-    }
   });
-  resultsEl.addEventListener('click', (e) => {
-    const item = e.target.closest('.agent-result');
-    if (!item || item.dataset.index === undefined) return;
-    const pick = filterAgents(searchEl.value)[Number(item.dataset.index)];
-    if (pick) selectAgent(pick);
-  });
-  document.getElementById('agentClear').addEventListener('click', (e) => {
-    e.stopPropagation();
-    clearAgent();
-  });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.agent-search')) {
-      resultsEl.classList.remove('open');
-      searchEl.setAttribute('aria-expanded', 'false');
-    }
-  });
-  syncClear();
 
   Share.mountDock();
 

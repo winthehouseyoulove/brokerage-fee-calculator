@@ -68,18 +68,6 @@
     }
   }
 
-  // Both pages link to each other in the header. Carry the payload across so
-  // the other page opens on the same scenario.
-  function carryIntoLinks() {
-    const hash = global.location.hash;
-    if (!hash.replace(/^#/, '').startsWith(KEY)) return;
-    document.querySelectorAll('.top-nav a[href]').forEach(a => {
-      const href = a.getAttribute('href');
-      if (/^https?:|^#/.test(href)) return;
-      a.setAttribute('href', href.split('#')[0] + hash);
-    });
-  }
-
   // Copy only the keys a page already knows about, and only when the type
   // matches, so an old or edited payload cannot inject anything unexpected.
   function adopt(target, source) {
@@ -102,11 +90,35 @@
   }
 
   // A link someone opened describes a finished scenario, so it seeds the tab.
-  // After that the tab's own state is what the copy button hands out.
+  // After that the tab's own state is what the copy button hands out, so the
+  // link leaves the address bar: left there, a reload would lay it over every
+  // change made since, and the nav used to carry it to the other page too.
+  // Moving between the pages needs no link; the session carries it.
   function begin() {
     const fromLink = read();
-    if (fromLink.v === 1) remember(fromLink);
+    if (fromLink.v === 1) {
+      if (!fromLink.c) fromLink.c = legacyCommon(fromLink);
+      remember(fromLink);
+      // The agent and custom plan in a link outrank what this browser last used.
+      storeCommon(fromLink.c);
+      try {
+        global.history.replaceState(null, '', global.location.pathname + global.location.search);
+      } catch (e) {}
+    }
     return session();
+  }
+
+  // Links copied before the shared slot existed kept the agent in the plan
+  // builder's half and the custom plan in whichever page wrote it.
+  function legacyCommon(payload) {
+    const p = payload.p || {}, i = payload.i || {};
+    const c = {};
+    if (typeof p.agentName === 'string') c.agentName = p.agentName;
+    const plan = p.customPlan || i.customPlan;
+    if (plan && typeof plan === 'object') c.customPlan = plan;
+    const show = p.showCustomPlan !== undefined ? p.showCustomPlan : i.showCustom;
+    if (typeof show === 'boolean') c.showCustom = show;
+    return c;
   }
 
   // Each page owns one half: 'p' the plan builder, 'i' the comparison page.
@@ -119,10 +131,86 @@
     remember(merged);
   }
 
-  // The link lands on the page the sender was using; the nav carries the
-  // payload from there.
+  // 'c' belongs to neither page: the agent and the custom plan. Pick or edit
+  // them on either page, in any tab, and the other page shows the same ones.
+  //   agentName   '' when nobody is matched
+  //   customPlan  the terms below
+  //   showCustom  whether the custom plan card is on the page
+  //
+  // localStorage is the copy that counts, because it is the one every tab
+  // sees. The session keeps a copy for the share link and stands in only when
+  // the browser blocks storage. Letting the session copy win, as the first
+  // version did, left a second tab on whatever agent it had picked before.
+  const COMMON_KEY = 'remax-shared-common';
+  function storedCommon() {
+    try { return JSON.parse(localStorage.getItem(COMMON_KEY)) || null; } catch (e) { return null; }
+  }
+  function storeCommon(c) {
+    try {
+      const text = JSON.stringify(c);
+      // An unchanged write would still wake the other tab on some browsers
+      if (localStorage.getItem(COMMON_KEY) !== text) localStorage.setItem(COMMON_KEY, text);
+    } catch (e) {}
+  }
+  function common() {
+    const stored = storedCommon();
+    if (stored && typeof stored === 'object') return stored;
+    const c = session().c;
+    return c && typeof c === 'object' ? c : null;
+  }
+  function setCommon(half) {
+    const c = Object.assign({}, common() || {}, half);
+    const s = session();
+    s.v = 1;
+    s.c = c;
+    remember(s);
+    storeCommon(c);
+  }
+
+  // Tells the page when another tab changes the agent or the custom plan, and
+  // when the browser restores this page from its back/forward cache. A
+  // restored page runs no script, so without this the Back button shows the
+  // agent the page had when it was left.
+  function onCommonChange(fn) {
+    global.addEventListener('storage', (e) => {
+      if (e.key !== COMMON_KEY || !e.newValue) return;
+      let c;
+      try { c = JSON.parse(e.newValue); } catch (err) { return; }
+      const s = session();
+      s.v = 1;
+      s.c = c;
+      remember(s);
+      fn(c);
+    });
+    global.addEventListener('pageshow', (e) => {
+      if (!e.persisted) return;
+      const c = common();
+      if (c) fn(c);
+    });
+  }
+
+  // The custom plan terms both pages edit. Each page keeps its own key and
+  // styling on the plan object; only these travel.
+  const PLAN_TERMS = ['name', 'monthly', 'annualDues', 'perTransaction', 'splitRate', 'cap', 'postCapRate'];
+  function planTerms(plan) {
+    const out = {};
+    PLAN_TERMS.forEach(k => { out[k] = plan[k]; });
+    return out;
+  }
+  function adoptPlan(target, source) {
+    if (!source || typeof source !== 'object') return;
+    PLAN_TERMS.forEach(k => {
+      if (typeof source[k] === typeof target[k]) target[k] = source[k];
+    });
+  }
+
+  // The link lands on the page the sender was using, carrying the agent and
+  // custom plan as they stand now, even if another tab set them.
   function linkFor() {
-    return global.location.origin + global.location.pathname + '#' + encode(session());
+    const payload = session();
+    const c = common();
+    if (c) payload.c = c;
+    return global.location.origin + global.location.pathname + '#' + encode(payload);
   }
 
   // The copy control sits in the corner of both pages: a link that becomes a
@@ -138,9 +226,10 @@
     }
     btn.addEventListener('click', () => {
       const url = linkFor();
-      try { global.history.replaceState(null, '', url); } catch (e) {}
-      carryIntoLinks();
       copy(url).then(ok => {
+        // Only a failed copy leaves the link in the address bar to copy by
+        // hand. Left there otherwise, a reload would reapply it over later edits.
+        if (!ok) { try { global.history.replaceState(null, '', url); } catch (e) {} }
         btn.classList.add('is-done');
         say(ok ? 'Link copied' : 'The link is in the address bar');
         clearTimeout(resetTimer);
@@ -152,5 +241,8 @@
     });
   }
 
-  global.Share = { read, write, copy, carryIntoLinks, adopt, begin, session, contribute, linkFor, mountDock };
+  global.Share = {
+    read, write, copy, adopt, begin, session, contribute, linkFor, mountDock,
+    common, setCommon, onCommonChange, planTerms, adoptPlan,
+  };
 })(window);
