@@ -2369,9 +2369,9 @@
           <div class="dist-head">From deals to your week</div>
           <div class="ladder">
             <div class="rung"><b id="ldDeals">0</b><span>closings</span></div>
-            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateClose" inputmode="numeric" value="75" aria-label="Percent of signed clients that close" />% of signed clients make it to closing</div><div class="rline"></div></div>
+            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateClose" inputmode="numeric" value="85" aria-label="Percent of signed clients that close" />% of signed clients make it to closing</div><div class="rline"></div></div>
             <div class="rung"><b id="ldClients">0</b><span>signed clients</span></div>
-            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateSign" inputmode="numeric" value="40" aria-label="Percent of appointments that sign" />% of appointments sign with you</div><div class="rline"></div></div>
+            <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateSign" inputmode="numeric" value="60" aria-label="Percent of appointments that sign" />% of appointments sign with you</div><div class="rline"></div></div>
             <div class="rung"><b id="ldAppts">0</b><span>appointments</span></div>
             <div class="ratio"><div class="rline"></div><div class="op"><input class="rate-edit" id="rateBook" inputmode="numeric" value="10" aria-label="Percent of conversations that book an appointment" />% of real conversations book one</div><div class="rline"></div></div>
             <div class="rung"><b id="ldConv">0</b><span>conversations this year</span></div>
@@ -2523,8 +2523,10 @@
     // Conversion rates for the activity ladder: percent of signed clients that
     // close, of appointments that sign, of conversations that book. Editable
     // assumptions, like the tax rate, and they travel with the plan.
-    ladderClose: 75,
-    ladderSign: 40,
+    // Mike's figures from the Momentum classes, 09/11/26, which he says are
+    // already watered down to stay conservative. They replaced 75 / 40 / 10.
+    ladderClose: 85,
+    ladderSign: 60,
     ladderBook: 10,
     avgPrice: medianAvgPrice(),
     // The agent whose own average sale price is driving the number above.
@@ -2581,6 +2583,13 @@
       Object.keys(DEFAULTS).forEach(k => {
         if (saved[k] !== undefined && typeof saved[k] === typeof DEFAULTS[k]) state[k] = saved[k];
       });
+      // A save still holding the old ladder defaults, 75 / 40 / 10, never had
+      // them edited, so it takes Mike's new ones. Rates someone typed stay.
+      if (state.ladderClose === 75 && state.ladderSign === 40 && state.ladderBook === 10) {
+        state.ladderClose = DEFAULTS.ladderClose;
+        state.ladderSign = DEFAULTS.ladderSign;
+        state.ladderBook = DEFAULTS.ladderBook;
+      }
       return true;
     } catch (e) {
       return false;
