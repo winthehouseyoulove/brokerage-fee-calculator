@@ -241,6 +241,11 @@
   .apc-input-small input { font-size: 18px; }
   .apc-input-small .apc-suffix { font-size: 15px; }
   .trc-note a { color: var(--remax-blue); }
+  /* An action inside a note reads as a link, not a button */
+  .trc-note .note-link {
+    background: none; border: none; padding: 0; font: inherit; font-weight: 600;
+    color: var(--remax-blue); text-decoration: underline; cursor: pointer;
+  }
 
   .tax-rate-card { animation-delay: 0.10s; }
   .funnel-flow:nth-of-type(4) { animation-delay: 0.15s; }
@@ -1681,6 +1686,8 @@
   }
   .funnel-plan:not(.winner) .fp-net-val { color: #232323; }
   .funnel-plan.winner .fp-net-val { color: var(--win); }
+  /* On the picked card, when it needs more deals than the cards are priced at */
+  .funnel-plan .fp-own { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--remax-blue); }
   .funnel-plan .fp-gci-label {
     font-size: 11px;
     text-transform: uppercase;
@@ -2532,6 +2539,9 @@
     // The agent whose own average sale price is driving the number above.
     // Empty means nobody is matched, so the area median stands in.
     agentName: '',
+    // When that agent was last picked, on either page. A fresh pick puts the
+    // agent's own price back even when it is the same agent as before.
+    agentPick: 0,
     // Which plan the funnel and the money flow are built on. Empty means
     // whichever plan needs the fewest deals.
     selectedPlan: '',
@@ -2666,12 +2676,13 @@
   const solveRequiredTransactions = FeeMath.solveRequiredTransactions;
 
   // ---------- Render REMAX plan cards INSIDE the funnel ----------
-  // Each card is solved on its own: the fewest deals that plan needs to net the
-  // goal, and what the agent keeps at that count. Picking a plan only decides
-  // which one the funnel below is built on, so the cards hold still when the
-  // agent switches. Pricing every card at the picked plan's deal count made
-  // both nets jump on a click. The best option is the REMAX plan that needs
-  // the fewest deals, with the higher net breaking a tie.
+  // Every card is priced at one deal count, so the GCI and transactions read
+  // the same across them and the nets compare like for like. That count is the
+  // fewest deals any plan on the page needs to reach the goal, and it does not
+  // follow the pick: tying it to the picked plan made every net jump on a
+  // click, and giving each card its own count made the GCI differ. The funnel
+  // below is built on the picked plan's own count, and a picked plan that
+  // needs more deals than the cards show says so on its card.
   function renderFunnelPlans(targetNet, commissionPct, avgPrice) {
     const container = document.getElementById('funnelPlans');
     const addBtn = document.getElementById('customAdd');
@@ -2693,20 +2704,16 @@
     // one it runs on the plan that needs the fewest deals.
     const chosen = solved.find(x => x.plan.key === state.selectedPlan) || best;
 
-    // A plan that cannot reach the goal at all is shown at the chosen plan's count.
-    const cards = onPage.map(p => {
-      const own = solved.find(x => x.plan === p);
-      const txn = own ? own.transactions : chosen.transactions;
-      const gci = txn * avgPrice * (commissionPct / 100);
-      return { plan: p, txn, gci, ...compute(p, gci, txn, 0) };
-    });
-    const winner = cards.filter(c => !c.plan.editable).reduce((a, b) =>
-      (b.txn < a.txn || (b.txn === a.txn && b.net > a.net)) ? b : a);
-    const chosenCard = cards.find(c => c.plan === chosen.plan);
+    const sharedTxn = best.transactions;
+    const sharedGci = sharedTxn * avgPrice * (commissionPct / 100);
+    const cards = onPage.map(p => ({ plan: p, ...compute(p, sharedGci, sharedTxn, 0) }));
+    const winnerNet = Math.max(...cards.filter(c => !c.plan.editable).map(c => c.net));
 
     container.innerHTML = cards.map(r => {
-      const isWinner = r === winner;
-      const isChosen = r === chosenCard;
+      const isWinner = !r.plan.editable && r.net === winnerNet;
+      const isChosen = r.plan === chosen.plan;
+      const ownNote = isChosen && chosen.transactions !== sharedTxn
+        ? `<div class="fp-own">Needs ${chosen.transactions} deals to reach your goal</div>` : '';
       const splitDisplay = `${Math.round((1 - r.plan.splitRate) * 100)}/${Math.round(r.plan.splitRate * 100)}`;
       const postCapDisplay = `${Math.round((1 - r.plan.postCapRate) * 100)}/${Math.round(r.plan.postCapRate * 100)}`;
       const specs = r.plan.editable ? `
@@ -2733,7 +2740,7 @@
           </div>
           <div class="fp-body">
             <div class="fp-breakdown fp-breakdown-top">
-              <div class="fp-row"><span>GCI (${r.txn} txns)</span><span class="fp-val">${fmt(r.gci)}</span></div>
+              <div class="fp-row"><span>GCI (${sharedTxn} txns)</span><span class="fp-val">${fmt(sharedGci)}</span></div>
               <div class="fp-row"><span>Brokerage Split</span><span class="fp-val">−${fmt(r.splitCost)}</span></div>
               <div class="fp-row"><span>Monthly Fees (×12)</span><span class="fp-val">−${fmt(r.monthlyTotal)}</span></div>
               <div class="fp-row"><span>Transaction Fees</span><span class="fp-val">−${fmt(r.transactionTotal)}</span></div>
@@ -2742,6 +2749,7 @@
             <div class="fp-net">
               <div class="fp-net-val">${fmt(r.net)}</div>
               <div class="fp-net-label">Net to Agent</div>
+              ${ownNote}
             </div>
           </div>
           <button type="button" class="fp-pick" data-action="pick">${isChosen ? 'Your plan' : 'Build my plan on this'}</button>
@@ -2749,10 +2757,12 @@
       `;
     }).join('');
 
+    // The funnel below runs on the picked plan's own solve
+    const winnerName = (cards.find(c => !c.plan.editable && c.net === winnerNet) || { plan: {} }).plan.name || '';
     return {
-      volume: chosenCard.txn * avgPrice, gci: chosenCard.gci, transactions: chosenCard.txn,
-      net: chosenCard.net,
-      winnerName: winner.plan.name, chosenName: chosen.plan.name,
+      volume: chosen.volume, gci: chosen.gci, transactions: chosen.transactions,
+      net: chosen.result.net,
+      winnerName, chosenName: chosen.plan.name,
     };
   }
 
@@ -3082,7 +3092,7 @@
       cityRate: state.cityRate, cityName: state.cityName,
       entity: state.entity, ownerWage: state.ownerWage, entityCost: state.entityCost,
       ladderClose: state.ladderClose, ladderSign: state.ladderSign, ladderBook: state.ladderBook,
-      avgPrice: state.avgPrice, agentName: state.agentName,
+      avgPrice: state.avgPrice, agentName: state.agentName, agentPick: state.agentPick,
       selectedPlan: state.selectedPlan, showCustomPlan: state.showCustomPlan,
       touched: true,
     };
@@ -3309,6 +3319,7 @@
     Share.contribute('i', payload.i);
     Share.setCommon({
       agentName: state.agentName,
+      agentPick: state.agentPick,
       customPlan: Share.planTerms(state.customPlan),
       showCustom: state.showCustomPlan,
     });
@@ -3363,27 +3374,39 @@
     if (!prices.length) { el.remove(); return; }
     const money = n => '$' + toStep(n).toLocaleString('en-US');
     const agent = AgentSearch.find(state.agentName);
+    const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
     // The lookup sits at the top of the page, far from this card, so the note
-    // names the agent whose price is in play.
-    el.textContent = (agent
-        ? `This starts at ${agent.name}'s own 2025 average sale, $${AgentSearch.avgSale(agent).toLocaleString('en-US')}. `
-        : 'No agent matched, so this starts at the area median. ')
+    // names the agent whose price is in play, and says so plainly when the
+    // price has been moved off that agent's own figure.
+    let lead = 'No agent matched, so this starts at the area median. ';
+    if (agent) {
+      const own = AgentSearch.avgSale(agent);
+      const ownText = '$' + own.toLocaleString('en-US');
+      lead = state.avgPrice === own
+        ? `This is ${esc(agent.name)}'s own 2025 average sale. `
+        : `${esc(agent.name)}'s own 2025 average sale is ${ownText}, and this has been moved off it. `
+          + `<button type="button" class="note-link" data-action="use-agent-price">Use ${ownText}</button> `;
+    }
+    el.innerHTML = lead
       + `Across ${prices.length.toLocaleString('en-US')} Dayton area agents, `
       + `the middle agent's average sale price is ${money(percentile(prices, 0.5))}. `
       + `Half of them land between ${money(percentile(prices, 0.25))} and ${money(percentile(prices, 0.75))}.`;
   }
 
   // The agent and the custom plan are shared with the comparison page, and
-  // whichever page touched them last wins. A new agent brings their own
-  // average sale price; the same agent leaves alone a price the reader has
-  // moved since.
+  // whichever page touched them last wins. Picking an agent, on either page,
+  // brings their own average sale price, even when it is the same agent as
+  // before; keeping a moved price for a re-picked agent showed the wrong
+  // average. A price the reader moves after the pick stays.
   function applyCommon(c) {
     if (!c) return;
-    if (typeof c.agentName === 'string' && c.agentName !== state.agentName) {
+    const repicked = typeof c.agentPick === 'number' && c.agentPick !== state.agentPick;
+    if (typeof c.agentName === 'string' && (c.agentName !== state.agentName || repicked)) {
       const agent = AgentSearch.find(c.agentName);
       state.agentName = agent ? agent.name : '';
       state.avgPrice = agent ? AgentSearch.avgSale(agent) : medianAvgPrice();
     }
+    if (typeof c.agentPick === 'number') state.agentPick = c.agentPick;
     Share.adoptPlan(state.customPlan, c.customPlan);
     if (typeof c.showCustom === 'boolean') state.showCustomPlan = c.showCustom;
     if (!state.showCustomPlan && state.selectedPlan === 'custom') state.selectedPlan = '';
@@ -3998,6 +4021,7 @@
 
   function useAgent(agent) {
     state.agentName = agent ? agent.name : '';
+    state.agentPick = agent ? Date.now() : 0;
     // The agent's own figure to the dollar, not rounded to the slider's step,
     // so it matches the comparison page and the search field.
     setAvgPrice(agent ? AgentSearch.avgSale(agent) : medianAvgPrice());
@@ -4096,11 +4120,22 @@
     formatWithCommas(e.target);
     state.avgPrice = Number(e.target.value.replace(/,/g, '')) || 0;
     document.getElementById('avgPriceSlider').value = String(state.avgPrice);
+    renderAvgPriceNote();
     recompute();
   });
   document.getElementById('avgPriceSlider').addEventListener('input', (e) => {
     state.avgPrice = Number(e.target.value) || 0;
     document.getElementById('avgPrice').value = state.avgPrice.toLocaleString('en-US');
+    renderAvgPriceNote();
+    recompute();
+  });
+  // The note's button puts the matched agent's own price back
+  document.getElementById('avgPriceNote').addEventListener('click', (e) => {
+    if (!e.target.closest('[data-action="use-agent-price"]')) return;
+    const agent = AgentSearch.find(state.agentName);
+    if (!agent) return;
+    setAvgPrice(AgentSearch.avgSale(agent));
+    renderAvgPriceNote();
     recompute();
   });
 

@@ -998,9 +998,11 @@
   // Picking an agent fills in their 2025 production. The agent is shared with
   // the builder, and whenever one is set this page shows their own production,
   // ahead of the plan numbers the builder hands over.
-  // The agent whose production is on screen. A change to the custom plan
-  // alone must not refill the fields over edits made here.
+  // The agent whose production is on screen, and when they were picked. A
+  // change to the custom plan alone must not refill the fields over edits
+  // made here, but a fresh pick of the same agent on the builder does.
   let shownAgent = '';
+  let shownPick = 0;
   // Units go in as the MLS records them, halves included, so the average sale
   // price here is volume over units: the figure the search shows and the plan
   // builder uses. Rounding 8.5 units to 9 had this page quoting a lower one.
@@ -1014,18 +1016,21 @@
   }
   const lookup = AgentSearch.mount(document.getElementById('agentLookup'), {
     onSelect(agent) {
+      shownPick = Date.now();
       fillProduction(agent);
-      Share.setCommon({ agentName: agent.name });
+      Share.setCommon({ agentName: agent.name, agentPick: shownPick });
     },
     onClear() {
       shownAgent = '';
-      Share.setCommon({ agentName: '' });
+      shownPick = 0;
+      Share.setCommon({ agentName: '', agentPick: 0 });
     },
   });
   const sharedAgent = AgentSearch.find(common.agentName);
   if (sharedAgent) {
     lookup.show(sharedAgent);
     fillProduction(sharedAgent);
+    shownPick = typeof common.agentPick === 'number' ? common.agentPick : 0;
   }
 
   // Another tab changed the agent or the custom plan, or the browser brought
@@ -1034,7 +1039,9 @@
     Share.adoptPlan(currentPlan, c.customPlan);
     if (typeof c.showCustom === 'boolean') showCustom = c.showCustom;
     const agent = AgentSearch.find(c.agentName);
-    if ((agent ? agent.name : '') !== shownAgent) {
+    const pick = typeof c.agentPick === 'number' ? c.agentPick : shownPick;
+    if ((agent ? agent.name : '') !== shownAgent || pick !== shownPick) {
+      shownPick = pick;
       lookup.show(agent);
       shownAgent = agent ? agent.name : '';
       if (agent) { fillProduction(agent); return; }
