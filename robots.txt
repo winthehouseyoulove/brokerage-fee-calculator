@@ -1,0 +1,14 @@
+# This site is not meant to be found through search.
+#
+# Every page carries <meta name="robots" content="noindex, nofollow">, which
+# keeps it out of search results. A search engine only sees that tag if it is
+# allowed to fetch the page, so Google and Bing are let in to read it, and in
+# particular to drop the old github.io URLs that now redirect here. Every
+# other crawler, AI training crawlers included, is turned away.
+
+User-agent: Googlebot
+User-agent: Bingbot
+Allow: /
+
+User-agent: *
+Disallow: /
