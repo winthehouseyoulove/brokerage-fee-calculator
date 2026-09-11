@@ -199,6 +199,13 @@
      52px is held open from the start. Without it the card below jumped
      when the box arrived, which PageSpeed scored as a layout shift. */
   #agentLookup { min-height: 52px; }
+  /* The plan cards are drawn by script at the end of the page, and a fast
+     load paints before that script runs. The custom plan button and the
+     footer used to paint right under the empty cards area, then jump about
+     550px when the cards arrived, which was most of PageSpeed's 0.35
+     desktop layout shift. They stay unpainted until the cards are in, so
+     they appear once, in place. A noscript rule below undoes this. */
+  #plans:empty ~ * { visibility: hidden; }
   .agent-input { position: relative; }
   .agent-input input { padding-right: 40px; }
   /* type="search" brings its own clear button; this control has its own */
@@ -674,6 +681,7 @@
   .office-disclosure .od-line { display: block; }
   .office-disclosure a { color: inherit; text-decoration: underline; }
 </style>
+<noscript><style>#plans:empty ~ * { visibility: visible; }</style></noscript>
 </head>
 <body>
 <div class="page-flash" id="pageFlash" aria-hidden="true"><img src="remax-logo.png" alt="" width="1112" height="308" /></div>
