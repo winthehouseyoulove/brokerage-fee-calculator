@@ -4,19 +4,29 @@
 (function (global) {
   'use strict';
 
-  const KEY = 's=';
+  // No '=' anywhere in the link: iMessage ends a URL at the first one, so a
+  // '#s=' link arrived as a bare page plus a wall of text. 's=' links copied
+  // before that are still read.
+  const KEY = 's-';
+  const LEGACY_KEY = 's=';
   // Both pages write their own half here as the user works, so one link can
   // carry a scenario they built by moving between them. Session-scoped: it is
   // this tab's work in progress, not a saved document.
   const SESSION_KEY = 'remax-share-state';
 
-  // Base64 over the raw UTF-8 bytes. Percent-encoding first would survive
-  // unicode too, but it inflates the link by half again for no gain.
+  // URL-safe base64 over the raw UTF-8 bytes, unpadded, so the link holds
+  // only letters, digits, '-' and '_' and messaging apps keep it whole.
+  // Percent-encoding first would survive unicode too, but it inflates the
+  // link by half again for no gain.
   function encode(payload) {
     const bytes = new TextEncoder().encode(JSON.stringify(payload));
     let bin = '';
     bytes.forEach(b => { bin += String.fromCharCode(b); });
-    return KEY + btoa(bin);
+    return KEY + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function decode(text) {
+    const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
+    return atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
   }
 
   // Returns {} when there is no payload, or when it is anything but a v1
@@ -24,8 +34,10 @@
   function read() {
     try {
       const raw = (global.location.hash || '').replace(/^#/, '');
-      if (!raw.startsWith(KEY)) return {};
-      const bin = atob(raw.slice(KEY.length));
+      let bin;
+      if (raw.startsWith(KEY)) bin = decode(raw.slice(KEY.length));
+      else if (raw.startsWith(LEGACY_KEY)) bin = atob(raw.slice(LEGACY_KEY.length));
+      else return {};
       const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
       const payload = JSON.parse(new TextDecoder().decode(bytes));
       if (!payload || payload.v !== 1) return {};
