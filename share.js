@@ -4,10 +4,13 @@
 (function (global) {
   'use strict';
 
-  // No '=' anywhere in the link: iMessage ends a URL at the first one, so a
-  // '#s=' link arrived as a bare page plus a wall of text. 's=' links copied
-  // before that are still read.
+  // Apple's link detector, which iMessage uses, gives up on a URL once one
+  // unbroken run of characters in it passes about 300, and the link arrived
+  // as a bare page plus a wall of text. So the data goes out in dotted chunks
+  // well under that, and the dots are dropped on the way back in. Links from
+  // before the chunks, '#s-' and the older '#s=', are still read.
   const KEY = 's-';
+  const CHUNK = 200;
   const LEGACY_KEY = 's=';
   // Both pages write their own half here as the user works, so one link can
   // carry a scenario they built by moving between them. Session-scoped: it is
@@ -22,10 +25,11 @@
     const bytes = new TextEncoder().encode(JSON.stringify(payload));
     let bin = '';
     bytes.forEach(b => { bin += String.fromCharCode(b); });
-    return KEY + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const b64 = btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return KEY + (b64.match(new RegExp('.{1,' + CHUNK + '}', 'g')) || []).join('.');
   }
   function decode(text) {
-    const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
+    const b64 = text.replace(/\./g, '').replace(/-/g, '+').replace(/_/g, '/');
     return atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
   }
 
